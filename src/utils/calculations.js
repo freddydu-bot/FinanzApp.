@@ -103,11 +103,13 @@ export function groupByCategory(expenses, categories) {
  */
 export function filterByPeriod(expenses, month, year) {
   return expenses.filter((e) => {
-    const d = new Date(e.date + 'T00:00:00');
+    if (!e.date) return false;
+    // Clean date string (take only YYYY-MM-DD if it has a time/timezone)
+    const dateStr = e.date.includes('T') ? e.date.split('T')[0] : e.date;
+    const d = new Date(dateStr + 'T12:00:00'); // Use noon to avoid timezone shifts
     return d.getMonth() + 1 === month && d.getFullYear() === year;
   });
 }
-
 /**
  * Calculate budget vs actual for each category
  */

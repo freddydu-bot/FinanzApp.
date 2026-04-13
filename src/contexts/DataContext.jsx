@@ -44,12 +44,13 @@ export function DataProvider({ children }) {
     try {
       setLoading(true);
       // 1. Get Partnership
-      const { data: pData, error: pError } = await supabase
+      const { data: pData } = await supabase
         .from('partnerships')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .single();
 
+      let currentPartnership = pData;
       if (pData) {
         setPartnership(pData);
         // Get Partner Profile
@@ -58,24 +59,39 @@ export function DataProvider({ children }) {
         setPartner(userData);
       }
 
-      // 2. Get Categories
-      const { data: cData } = await supabase.from('categories').select('*');
-      setCategories(cData || DEFAULT_CATEGORIES);
-
-      // 3. Get Expenses (for this partnership)
-      if (pData) {
-        const { data: eData } = await supabase.from('expenses').select('*').eq('partnership_id', pData.id);
-        setExpenses(eData || []);
-
-        const { data: bData } = await supabase.from('budgets').select('*').eq('partnership_id', pData.id);
-        setBudgets(bData || []);
-
-        const { data: rData } = await supabase.from('recurring_expenses').select('*').eq('partnership_id', pData.id);
-        setRecurringExpenses(rData || []);
-
-        const { data: sData } = await supabase.from('savings_goals').select('*').eq('partnership_id', pData.id);
-        setSavingsGoals(sData || []);
+      // 2. Load Expenses
+      let expQuery = supabase.from('expenses').select('*');
+      if (currentPartnership) {
+        expQuery = expQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
+      } else {
+        expQuery = expQuery.eq('user_id', user.id);
       }
+      const { data: eData } = await expQuery;
+      setExpenses(eData || []);
+
+      // 3. Load Budgets
+      let budQuery = supabase.from('budgets').select('*');
+      if (currentPartnership) {
+        budQuery = budQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
+      } else {
+        budQuery = budQuery.eq('user_id', user.id);
+      }
+      const { data: bData } = await budQuery;
+      setBudgets(bData || []);
+
+      // 4. Load Savings
+      let svgQuery = supabase.from('savings_goals').select('*');
+      if (currentPartnership) {
+        svgQuery = svgQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
+      } else {
+        svgQuery = svgQuery.eq('user_id', user.id);
+      }
+      const { data: sData } = await svgQuery;
+      setSavingsGoals(sData || []);
+
+      // 5. Build Categories list
+      setCategories(DEFAULT_CATEGORIES);
+
     } catch (error) {
       console.error("Real data loading error:", error);
     } finally {
@@ -174,11 +190,16 @@ export function DataProvider({ children }) {
     if (isDemoMode) {
       setExpenses(prev => [newExp, ...prev]);
       localStorage.setItem('finance-expenses', JSON.stringify([newExp, ...expenses]));
+      return newExp;
     } else {
       const { error } = await supabase.from('expenses').insert(newExp);
-      if (!error) setExpenses(prev => [newExp, ...prev]);
+      if (error) {
+        console.error("Error al guardar gasto:", error);
+        throw new Error(error.message);
+      }
+      setExpenses(prev => [newExp, ...prev]);
+      return newExp;
     }
-    return newExp;
   }, [user, partnership, expenses]);
 
   const updateExpense = useCallback(async (id, updates) => {
