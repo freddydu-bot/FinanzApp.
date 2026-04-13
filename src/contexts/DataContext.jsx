@@ -43,31 +43,47 @@ export function DataProvider({ children }) {
   async function loadRealData() {
     try {
       setLoading(true);
+      console.log("DEBUG: Iniciando carga de datos reales para:", user.id);
+      
       // 1. Get Partnership
-      const { data: pData } = await supabase
+      const { data: pData, error: pError } = await supabase
         .from('partnerships')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .single();
+        .maybeSingle();
+
+      if (pError) console.error("DEBUG: Error cargando partnership:", pError);
 
       let currentPartnership = pData;
       if (pData) {
+        console.log("DEBUG: Partnership encontrada:", pData.id);
         setPartnership(pData);
         // Get Partner Profile
         const partnerId = pData.user1_id === user.id ? pData.user2_id : pData.user1_id;
-        const { data: userData } = await supabase.from('profiles').select('*').eq('id', partnerId).single();
+        const { data: userData } = await supabase.from('profiles').select('*').eq('id', partnerId).maybeSingle();
         setPartner(userData);
+      } else {
+        console.log("DEBUG: No se encontró partnership activa.");
       }
 
-      // 2. Load Expenses
+      // 2. Load Expenses - Fetch everything relevant to this user
+      console.log("DEBUG: Cargando gastos...");
       let expQuery = supabase.from('expenses').select('*');
+      
       if (currentPartnership) {
         expQuery = expQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
       } else {
         expQuery = expQuery.eq('user_id', user.id);
       }
-      const { data: eData } = await expQuery;
-      setExpenses(eData || []);
+      
+      const { data: eData, error: eError } = await expQuery;
+      
+      if (eError) {
+        console.error("DEBUG: Error cargando gastos:", eError);
+      } else {
+        console.log(`DEBUG: Se cargaron ${eData?.length || 0} gastos.`);
+        setExpenses(eData || []);
+      }
 
       // 3. Load Budgets
       let budQuery = supabase.from('budgets').select('*');
