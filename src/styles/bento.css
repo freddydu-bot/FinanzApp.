@@ -1,0 +1,157 @@
+/* ========================================
+   BENTO GRID SYSTEM
+   ======================================== */
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+/* ---- Column Spans ---- */
+.bento-col-1 { grid-column: span 1; }
+.bento-col-2 { grid-column: span 2; }
+.bento-col-3 { grid-column: span 3; }
+.bento-col-4 { grid-column: span 4; }
+.bento-col-5 { grid-column: span 5; }
+.bento-col-6 { grid-column: span 6; }
+.bento-col-7 { grid-column: span 7; }
+.bento-col-8 { grid-column: span 8; }
+.bento-col-9 { grid-column: span 9; }
+.bento-col-10 { grid-column: span 10; }
+.bento-col-11 { grid-column: span 11; }
+.bento-col-12 { grid-column: span 12; }
+
+/* ---- Row Spans ---- */
+.bento-row-2 { grid-row: span 2; }
+.bento-row-3 { grid-row: span 3; }
+
+/* ---- Auto-fit grid for simple layouts ---- */
+.bento-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  width: 100%;
+}
+
+.bento-auto--sm {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.bento-auto--lg {
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+/* ---- Dashboard-specific layouts ---- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(120px, auto);
+  gap: var(--space-lg);
+}
+
+.dashboard-grid .stat-card {
+  grid-column: span 3;
+}
+
+.dashboard-grid .chart-wide {
+  grid-column: span 8;
+}
+
+.dashboard-grid .chart-side {
+  grid-column: span 4;
+}
+
+.dashboard-grid .full-width {
+  grid-column: span 12;
+}
+
+.dashboard-grid .half-width {
+  grid-column: span 6;
+}
+
+/* ---- Responsive Breakpoints ---- */
+
+/* Tablet landscape */
+@media (max-width: 1200px) {
+  .bento-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .dashboard-grid .stat-card { grid-column: span 4; }
+  .dashboard-grid .chart-wide { grid-column: span 8; }
+  .dashboard-grid .chart-side { grid-column: span 8; }
+  .dashboard-grid .half-width { grid-column: span 8; }
+
+  .bento-col-8 { grid-column: span 8; }
+  .bento-col-9 { grid-column: span 8; }
+  .bento-col-10 { grid-column: span 8; }
+  .bento-col-11 { grid-column: span 8; }
+  .bento-col-12 { grid-column: span 8; }
+}
+
+/* Tablet portrait */
+@media (max-width: 900px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: minmax(100px, auto);
+    gap: var(--space-md);
+  }
+
+  .dashboard-grid .stat-card { grid-column: span 2; }
+  .dashboard-grid .chart-wide { grid-column: span 4; }
+  .dashboard-grid .chart-side { grid-column: span 4; }
+  .dashboard-grid .half-width { grid-column: span 4; }
+  .dashboard-grid .full-width { grid-column: span 4; }
+
+  .bento-col-3,
+  .bento-col-4 { grid-column: span 2; }
+  .bento-col-5,
+  .bento-col-6,
+  .bento-col-7,
+  .bento-col-8,
+  .bento-col-9,
+  .bento-col-10,
+  .bento-col-11,
+  .bento-col-12 { grid-column: span 4; }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .bento-grid,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .dashboard-grid .stat-card,
+  .dashboard-grid .chart-wide,
+  .dashboard-grid .chart-side,
+  .dashboard-grid .half-width,
+  .dashboard-grid .full-width,
+  .bento-col-1,
+  .bento-col-2,
+  .bento-col-3,
+  .bento-col-4,
+  .bento-col-5,
+  .bento-col-6,
+  .bento-col-7,
+  .bento-col-8,
+  .bento-col-9,
+  .bento-col-10,
+  .bento-col-11,
+  .bento-col-12 {
+    grid-column: span 1;
+  }
+
+  .bento-auto,
+  .bento-auto--sm,
+  .bento-auto--lg {
+    grid-template-columns: 1fr;
+  }
+}
