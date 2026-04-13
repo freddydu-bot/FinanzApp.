@@ -12,7 +12,7 @@ import './ExpensesPage.css';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
-  const { expenses, categories, budgets, deleteExpense, selectedMonth, selectedYear, loading } = useData();
+  const { expenses, categories, budgets, deleteExpense, selectedMonth, selectedYear, loading, partnership } = useData();
   const toast = useToast();
 
   if (loading) {
