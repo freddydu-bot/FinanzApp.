@@ -67,21 +67,13 @@ export function DataProvider({ children }) {
       }
 
       // 2. Load Expenses - Fetch everything relevant to this user
-      console.log("DEBUG: Cargando gastos...");
-      let expQuery = supabase.from('expenses').select('*');
-      
-      if (currentPartnership) {
-        expQuery = expQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
-      } else {
-        expQuery = expQuery.eq('user_id', user.id);
-      }
-      
-      const { data: eData, error: eError } = await expQuery;
+      console.log("DEBUG: Cargando gastos para user:", user.id);
+      let { data: eData, error: eError } = await supabase.from('expenses').select('*');
       
       if (eError) {
         console.error("DEBUG: Error cargando gastos:", eError);
       } else {
-        console.log(`DEBUG: Se cargaron ${eData?.length || 0} gastos.`);
+        console.log(`DEBUG: Se cargaron ${eData?.length || 0} gastos totales en esta tabla.`);
         setExpenses(eData || []);
       }
 
@@ -203,16 +195,19 @@ export function DataProvider({ children }) {
       created_at: new Date().toISOString() 
     };
 
+    console.log("DEBUG: Intentando AGREGAR gasto:", newExp);
+
     if (isDemoMode) {
       setExpenses(prev => [newExp, ...prev]);
       localStorage.setItem('finance-expenses', JSON.stringify([newExp, ...expenses]));
       return newExp;
     } else {
-      const { error } = await supabase.from('expenses').insert(newExp);
+      const { data: insertedData, error } = await supabase.from('expenses').insert(newExp).select();
       if (error) {
-        console.error("Error al guardar gasto:", error);
+        console.error("DEBUG: Error al guardar gasto en Supabase:", error);
         throw new Error(error.message);
       }
+      console.log("DEBUG: Gasto guardado exitosamente. Respuesta:", insertedData);
       setExpenses(prev => [newExp, ...prev]);
       return newExp;
     }
