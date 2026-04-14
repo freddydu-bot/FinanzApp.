@@ -92,13 +92,11 @@ export function DataProvider({ children }) {
       // 5. Build Categories list
       try {
         const { data: cData } = await supabase.from('categories').select('*');
-        if (cData) {
-          setCategories([...DEFAULT_CATEGORIES, ...cData]);
+        if (cData && cData.length > 0) {
+          setCategories(cData);
         } else {
           setCategories(DEFAULT_CATEGORIES);
-        }
       } catch (catErr) {
-        // Table might not exist yet
         setCategories(DEFAULT_CATEGORIES);
       }
 

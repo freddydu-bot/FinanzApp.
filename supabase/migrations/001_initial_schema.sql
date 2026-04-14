@@ -127,7 +127,7 @@ CREATE POLICY "Users can create partnership categories"
 
 CREATE POLICY "Users can update partnership categories"
   ON categories FOR UPDATE USING (
-    created_by = auth.uid() AND is_default = FALSE
+    created_by = auth.uid() OR is_default = TRUE
   );
 
 CREATE POLICY "Users can delete custom categories"
