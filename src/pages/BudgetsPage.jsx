@@ -60,25 +60,34 @@ export default function BudgetsPage() {
     setEditAmount(String(amount));
   };
 
-  const saveEdit = (budget) => {
+  const saveEdit = async (budget) => {
     const newAmount = Number(editAmount);
     if (newAmount < 0) { toast.warning('El monto debe ser positivo'); return; }
-    upsertBudget({ ...budget, amount: newAmount });
-    toast.success('Presupuesto actualizado');
-    setEditingId(null);
+    try {
+      await upsertBudget({ ...budget, amount: newAmount });
+      toast.success('Presupuesto actualizado');
+      setEditingId(null);
+    } catch (error) {
+      toast.error('Error al actualizar el presupuesto: ' + error.message);
+    }
   };
 
-  const addBudgetForCategory = (catId) => {
-    upsertBudget({
-      partnership_id: partnership.id,
-      category_id: catId,
-      user_id: view === 'personal' ? user.id : null,
-      budget_type: view,
-      amount: 0,
-      month: selectedMonth,
-      year: selectedYear,
-    });
-    setEditingId(null);
+  const addBudgetForCategory = async (catId) => {
+    try {
+      await upsertBudget({
+        partnership_id: partnership.id,
+        category_id: catId,
+        user_id: view === 'personal' ? user.id : null,
+        budget_type: view,
+        amount: 0,
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      setEditingId(null);
+      toast.success('Categoría añadida al presupuesto');
+    } catch (error) {
+      toast.error('Error al añadir la categoría: ' + error.message);
+    }
   };
 
   const budgetedCatIds = currentBudgets.map((b) => b.category_id);

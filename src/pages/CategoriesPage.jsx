@@ -10,20 +10,24 @@ export default function CategoriesPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', icon: '📦', color: '#6366f1' });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { toast.warning('El nombre es requerido'); return; }
 
-    if (editing) {
-      updateCategory(editing.id, form);
-      toast.success('Categoría actualizada');
-    } else {
-      addCategory(form);
-      toast.success('Categoría creada');
+    try {
+      if (editing) {
+        await updateCategory(editing.id, form);
+        toast.success('Categoría actualizada');
+      } else {
+        await addCategory(form);
+        toast.success('Categoría creada');
+      }
+      setShowForm(false);
+      setEditing(null);
+      setForm({ name: '', icon: '📦', color: '#6366f1' });
+    } catch (error) {
+      toast.error('Error al guardar la categoría: ' + error.message);
     }
-    setShowForm(false);
-    setEditing(null);
-    setForm({ name: '', icon: '📦', color: '#6366f1' });
   };
 
   const handleEdit = (cat) => {
@@ -32,11 +36,15 @@ export default function CategoriesPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (cat) => {
+  const handleDelete = async (cat) => {
     if (cat.is_default) { toast.warning('No se pueden eliminar categorías predefinidas'); return; }
     if (window.confirm(`¿Eliminar la categoría "${cat.name}"?`)) {
-      deleteCategory(cat.id);
-      toast.success('Categoría eliminada');
+      try {
+        await deleteCategory(cat.id);
+        toast.success('Categoría eliminada');
+      } catch (error) {
+        toast.error('Error al eliminar: ' + error.message);
+      }
     }
   };
 

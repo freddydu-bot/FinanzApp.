@@ -240,7 +240,8 @@ export function DataProvider({ children }) {
     const newCat = { 
       ...category, 
       id, 
-      user_id: user?.id, 
+      created_by: user?.id,
+      partnership_id: partnership?.id, 
       is_default: false,
       created_at: new Date().toISOString() 
     };
@@ -268,7 +269,11 @@ export function DataProvider({ children }) {
       localStorage.setItem('finance-categories', JSON.stringify(newCategories));
     } else {
       const { error } = await supabase.from('categories').update(updates).eq('id', id);
-      if (!error) setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+      if (error) {
+        console.error("DEBUG: Error updating category:", error);
+        throw new Error(error.message);
+      }
+      setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
     }
   }, [categories]);
 
@@ -279,7 +284,11 @@ export function DataProvider({ children }) {
       localStorage.setItem('finance-categories', JSON.stringify(newCategories));
     } else {
       const { error } = await supabase.from('categories').delete().eq('id', id);
-      if (!error) setCategories(prev => prev.filter(c => c.id !== id));
+      if (error) {
+        console.error("DEBUG: Error deleting category:", error);
+        throw new Error(error.message);
+      }
+      setCategories(prev => prev.filter(c => c.id !== id));
     }
   }, [categories]);
 
@@ -329,6 +338,7 @@ export function DataProvider({ children }) {
         const { error: updateError } = await supabase.from('budgets').update(budgetData).eq('id', existing.id);
         if (updateError) {
            console.error("DEBUG: Update budget error:", updateError);
+           throw updateError;
         } else {
            setBudgets(prev => prev.map(b => b.id === existing.id ? { ...b, ...budgetData } : b));
         }
@@ -337,6 +347,7 @@ export function DataProvider({ children }) {
         const { error: insertError } = await supabase.from('budgets').insert({ ...budgetData, id });
         if (insertError) {
            console.error("DEBUG: Insert budget error:", insertError);
+           throw insertError;
         } else {
            setBudgets(prev => [...prev, { ...budgetData, id }]);
         }
