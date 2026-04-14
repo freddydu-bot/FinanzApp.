@@ -43,39 +43,31 @@ export function DataProvider({ children }) {
   async function loadRealData() {
     try {
       setLoading(true);
-      console.log("DEBUG: Iniciando carga de datos reales para:", user.id);
       
-      // 1. Get Partnership
-      const { data: pData, error: pError } = await supabase
+      const { data: pData } = await supabase
         .from('partnerships')
         .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .maybeSingle();
 
-      if (pError) console.error("DEBUG: Error cargando partnership:", pError);
-
       let currentPartnership = pData;
       if (pData) {
-        console.log("DEBUG: Partnership encontrada:", pData.id);
         setPartnership(pData);
-        // Get Partner Profile
         const partnerId = pData.user1_id === user.id ? pData.user2_id : pData.user1_id;
         const { data: userData } = await supabase.from('profiles').select('*').eq('id', partnerId).maybeSingle();
         setPartner(userData);
-      } else {
-        console.log("DEBUG: No se encontró partnership activa.");
       }
 
-      // 2. Load Expenses - Fetch everything relevant to this user
-      console.log("DEBUG: Cargando gastos para user:", user.id);
-      let { data: eData, error: eError } = await supabase.from('expenses').select('*');
-      
-      if (eError) {
-        console.error("DEBUG: Error cargando gastos:", eError);
+      // 2. Load Expenses
+      let expQuery = supabase.from('expenses').select('*');
+      if (currentPartnership) {
+        expQuery = expQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
       } else {
-        console.log(`DEBUG: Se cargaron ${eData?.length || 0} gastos totales en esta tabla.`);
-        setExpenses(eData || []);
+        expQuery = expQuery.eq('user_id', user.id);
       }
+      
+      const { data: eData } = await expQuery;
+      setExpenses(eData || []);
 
       // 3. Load Budgets
       let budQuery = supabase.from('budgets').select('*');
@@ -98,7 +90,17 @@ export function DataProvider({ children }) {
       setSavingsGoals(sData || []);
 
       // 5. Build Categories list
-      setCategories(DEFAULT_CATEGORIES);
+      try {
+        const { data: cData } = await supabase.from('categories').select('*');
+        if (cData) {
+          setCategories([...DEFAULT_CATEGORIES, ...cData]);
+        } else {
+          setCategories(DEFAULT_CATEGORIES);
+        }
+      } catch (catErr) {
+        // Table might not exist yet
+        setCategories(DEFAULT_CATEGORIES);
+      }
 
     } catch (error) {
       console.error("Real data loading error:", error);
@@ -195,19 +197,16 @@ export function DataProvider({ children }) {
       created_at: new Date().toISOString() 
     };
 
-    console.log("DEBUG: Intentando AGREGAR gasto:", newExp);
-
     if (isDemoMode) {
       setExpenses(prev => [newExp, ...prev]);
       localStorage.setItem('finance-expenses', JSON.stringify([newExp, ...expenses]));
       return newExp;
     } else {
-      const { data: insertedData, error } = await supabase.from('expenses').insert(newExp).select();
+      const { error } = await supabase.from('expenses').insert(newExp);
       if (error) {
-        console.error("DEBUG: Error al guardar gasto en Supabase:", error);
+        console.error("Error al guardar gasto:", error);
         throw new Error(error.message);
       }
-      console.log("DEBUG: Gasto guardado exitosamente. Respuesta:", insertedData);
       setExpenses(prev => [newExp, ...prev]);
       return newExp;
     }
@@ -234,6 +233,55 @@ export function DataProvider({ children }) {
       if (!error) setExpenses(prev => prev.filter(e => e.id !== id));
     }
   }, [expenses]);
+
+  // CRUD: Categories
+  const addCategory = useCallback(async (category) => {
+    const id = crypto.randomUUID();
+    const newCat = { 
+      ...category, 
+      id, 
+      user_id: user?.id, 
+      is_default: false,
+      created_at: new Date().toISOString() 
+    };
+
+    if (isDemoMode) {
+      const updated = [...categories, newCat];
+      setCategories(updated);
+      localStorage.setItem('finance-categories', JSON.stringify(updated));
+      return newCat;
+    } else {
+      const { error } = await supabase.from('categories').insert(newCat);
+      if (error) {
+        console.error("Error al guardar categoría:", error);
+        throw new Error(error.message);
+      }
+      setCategories(prev => [...prev, newCat]);
+      return newCat;
+    }
+  }, [user, categories]);
+
+  const updateCategory = useCallback(async (id, updates) => {
+    if (isDemoMode) {
+      const newCategories = categories.map((c) => (c.id === id ? { ...c, ...updates } : c));
+      setCategories(newCategories);
+      localStorage.setItem('finance-categories', JSON.stringify(newCategories));
+    } else {
+      const { error } = await supabase.from('categories').update(updates).eq('id', id);
+      if (!error) setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    }
+  }, [categories]);
+
+  const deleteCategory = useCallback(async (id) => {
+    if (isDemoMode) {
+      const newCategories = categories.filter((c) => c.id !== id);
+      setCategories(newCategories);
+      localStorage.setItem('finance-categories', JSON.stringify(newCategories));
+    } else {
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (!error) setCategories(prev => prev.filter(c => c.id !== id));
+    }
+  }, [categories]);
 
   // CRUD: Budgets
   const upsertBudget = useCallback(async (budget) => {
@@ -357,6 +405,9 @@ export function DataProvider({ children }) {
       addExpense,
       updateExpense,
       deleteExpense,
+      addCategory,
+      updateCategory,
+      deleteCategory,
       upsertBudget,
       upsertSavingsGoal,
       deleteSavingsGoal,

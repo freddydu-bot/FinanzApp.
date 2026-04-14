@@ -40,7 +40,6 @@ export default function ExpenseForm({ expense, onClose }) {
   const handleSubmit = (e) => {
     try {
       e.preventDefault();
-      console.log("DEBUG: Submit del formulario iniciado");
 
       if (!form.category_id || !form.amount || Number(form.amount) <= 0) {
         toast.warning('Completa todos los campos requeridos');
@@ -54,8 +53,6 @@ export default function ExpenseForm({ expense, onClose }) {
         partnership_id: partnership?.id,
       };
 
-      console.log("DEBUG: Enviando datos:", expenseData);
-
       if (isEditing) {
         updateExpense(expense.id, expenseData);
         toast.success('Gasto actualizado');
@@ -66,7 +63,7 @@ export default function ExpenseForm({ expense, onClose }) {
 
       onClose();
     } catch (error) {
-      console.error("DEBUG: Error en formulario:", error);
+      console.error("Error en formulario:", error);
       toast.error('Error al procesar el formulario');
     }
   };

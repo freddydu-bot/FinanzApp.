@@ -223,16 +223,6 @@ export default function ExpensesPage() {
       >
         <CsvImporter onClose={() => setShowCsv(false)} />
       </Modal>
-      {/* Diagnóstico Temporal - Borrar después */}
-      <div className="glass" style={{ marginTop: '50px', padding: '15px', border: '1px solid #ff4444', fontSize: '11px', opacity: 0.8 }}>
-        <h4 style={{ color: '#ff4444', marginBottom: '5px' }}>🚨 PANEL DE DIAGNÓSTICO (DEBUG)</h4>
-        <p><strong>UserID:</strong> {user?.id}</p>
-        <p><strong>Partner vinculado:</strong> {partnership?.id || 'No vinculado'}</p>
-        <p><strong>Periodo Seleccionado:</strong> {selectedMonth}/{selectedYear}</p>
-        <p><strong>Gastos Totales en Memoria:</strong> {expenses.length}</p>
-        <p><strong>Gastos que pasaron el filtro de periodo:</strong> {periodExpenses.length}</p>
-        <p><strong>MODO DEMO:</strong> {isDemoMode ? 'SÍ (Local)' : 'NO (Supabase Real)'}</p>
-      </div>
     </div>
   );
 }
