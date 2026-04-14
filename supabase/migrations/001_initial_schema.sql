@@ -43,7 +43,7 @@ CREATE POLICY "Users can view partner profile"
     id IN (
       SELECT CASE WHEN user1_id = auth.uid() THEN user2_id ELSE user1_id END
       FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     )
   );
 
@@ -112,7 +112,7 @@ CREATE POLICY "Users can view partnership categories"
   ON categories FOR SELECT USING (
     partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     )
   );
 
@@ -121,7 +121,7 @@ CREATE POLICY "Users can create partnership categories"
     created_by = auth.uid() AND
     partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     )
   );
 
@@ -193,7 +193,7 @@ CREATE POLICY "Users see own personal + all shared expenses"
     OR
     (expense_type = 'shared' AND partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     ))
   );
 
@@ -229,7 +229,7 @@ CREATE POLICY "Users can view partnership budgets"
   ON budgets FOR SELECT USING (
     partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     )
   );
 
@@ -237,7 +237,7 @@ CREATE POLICY "Users can manage partnership budgets"
   ON budgets FOR ALL USING (
     partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     )
   );
 
@@ -269,7 +269,7 @@ BEGIN
     p.id
   INTO v_partner_id, v_partnership_id
   FROM partnerships p
-  WHERE (p.user1_id = auth.uid() OR p.user2_id = auth.uid()) AND p.status = 'active'
+  WHERE (p.user1_id = auth.uid() OR p.user2_id = auth.uid())
   LIMIT 1;
 
   IF v_partner_id IS NULL THEN
@@ -376,7 +376,7 @@ CREATE POLICY "Users can view own and partnership goals"
     OR
     (goal_type = 'shared' AND partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     ))
   );
 
@@ -386,7 +386,7 @@ CREATE POLICY "Users can manage own and partnership goals"
     OR
     (goal_type = 'shared' AND partnership_id IN (
       SELECT id FROM partnerships
-      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid())
     ))
   );
 

@@ -28,21 +28,21 @@ const DEMO_PARTNERSHIP = {
 };
 
 const DEFAULT_CATEGORIES = [
-  { id: 'cat-1', name: 'Vivienda', icon: '🏠', color: '#8b5cf6', is_default: true },
-  { id: 'cat-2', name: 'Alimentación', icon: '🛒', color: '#10b981', is_default: true },
-  { id: 'cat-3', name: 'Transporte', icon: '🚗', color: '#3b82f6', is_default: true },
-  { id: 'cat-4', name: 'Servicios Públicos', icon: '💡', color: '#f59e0b', is_default: true },
-  { id: 'cat-5', name: 'Salud', icon: '🏥', color: '#ef4444', is_default: true },
-  { id: 'cat-6', name: 'Educación', icon: '📚', color: '#6366f1', is_default: true },
-  { id: 'cat-7', name: 'Entretenimiento', icon: '🎬', color: '#ec4899', is_default: true },
-  { id: 'cat-8', name: 'Ropa', icon: '👕', color: '#14b8a6', is_default: true },
-  { id: 'cat-9', name: 'Restaurantes', icon: '🍽️', color: '#f97316', is_default: true },
-  { id: 'cat-10', name: 'Seguros', icon: '🛡️', color: '#64748b', is_default: true },
-  { id: 'cat-11', name: 'Ahorro e Inversión', icon: '💰', color: '#22c55e', is_default: true },
-  { id: 'cat-12', name: 'Mascotas', icon: '🐾', color: '#a855f7', is_default: true },
-  { id: 'cat-13', name: 'Tecnología', icon: '💻', color: '#0ea5e9', is_default: true },
-  { id: 'cat-14', name: 'Cuidado Personal', icon: '✨', color: '#f472b6', is_default: true },
-  { id: 'cat-15', name: 'Otros', icon: '📦', color: '#94a3b8', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000001', name: 'Vivienda', icon: '🏠', color: '#8b5cf6', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000002', name: 'Alimentación', icon: '🛒', color: '#10b981', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000003', name: 'Transporte', icon: '🚗', color: '#3b82f6', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000004', name: 'Servicios Públicos', icon: '💡', color: '#f59e0b', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000005', name: 'Salud', icon: '🏥', color: '#ef4444', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000006', name: 'Educación', icon: '📚', color: '#6366f1', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000007', name: 'Entretenimiento', icon: '🎬', color: '#ec4899', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000008', name: 'Ropa', icon: '👕', color: '#14b8a6', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000009', name: 'Restaurantes', icon: '🍽️', color: '#f97316', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000010', name: 'Seguros', icon: '🛡️', color: '#64748b', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000011', name: 'Ahorro e Inversión', icon: '💰', color: '#22c55e', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000012', name: 'Mascotas', icon: '🐾', color: '#a855f7', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000013', name: 'Tecnología', icon: '💻', color: '#0ea5e9', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000014', name: 'Cuidado Personal', icon: '✨', color: '#f472b6', is_default: true },
+  { id: 'c0000000-0000-0000-0000-000000000015', name: 'Otros', icon: '📦', color: '#94a3b8', is_default: true },
 ];
 
 const now = new Date();
