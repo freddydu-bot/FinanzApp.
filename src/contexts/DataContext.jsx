@@ -301,27 +301,52 @@ export function DataProvider({ children }) {
       setBudgets(newBudgets);
       localStorage.setItem('finance-budgets', JSON.stringify(newBudgets));
     } else {
-      const { data: existing } = await supabase.from('budgets').select('id')
+      let query = supabase.from('budgets').select('id')
         .eq('category_id', budget.category_id)
         .eq('budget_type', budget.budget_type)
         .eq('month', budget.month)
-        .eq('year', budget.year)
-        .maybeSingle();
+        .eq('year', budget.year);
+
+      if (budgetData.partnership_id) {
+        query = query.eq('partnership_id', budgetData.partnership_id);
+      } else {
+        query = query.is('partnership_id', null);
+      }
+        
+      if (budgetData.user_id) {
+        query = query.eq('user_id', budgetData.user_id);
+      } else {
+        query = query.is('user_id', null);
+      }
+      
+      const { data: existing, error: selectError } = await query.maybeSingle();
+
+      if (selectError) {
+        console.error("DEBUG: Error finding budget:", selectError);
+      }
 
       if (existing) {
-        await supabase.from('budgets').update(budgetData).eq('id', existing.id);
-        setBudgets(prev => prev.map(b => b.id === existing.id ? { ...b, ...budgetData } : b));
+        const { error: updateError } = await supabase.from('budgets').update(budgetData).eq('id', existing.id);
+        if (updateError) {
+           console.error("DEBUG: Update budget error:", updateError);
+        } else {
+           setBudgets(prev => prev.map(b => b.id === existing.id ? { ...b, ...budgetData } : b));
+        }
       } else {
         const id = crypto.randomUUID();
-        const { error } = await supabase.from('budgets').insert({ ...budgetData, id });
-        if (!error) setBudgets(prev => [...prev, { ...budgetData, id }]);
+        const { error: insertError } = await supabase.from('budgets').insert({ ...budgetData, id });
+        if (insertError) {
+           console.error("DEBUG: Insert budget error:", insertError);
+        } else {
+           setBudgets(prev => [...prev, { ...budgetData, id }]);
+        }
       }
     }
   }, [user, partnership, budgets]);
 
   // CRUD: Savings Goals
   const upsertSavingsGoal = useCallback(async (goal) => {
-    const goalData = { ...goal, partnership_id: partnership?.id };
+    const goalData = { ...goal, partnership_id: partnership?.id, user_id: goal.goal_type === 'shared' ? null : user?.id };
     if (isDemoMode) {
       const existingIdx = savingsGoals.findIndex(g => g.id === goal.id);
       let newGoals = [...savingsGoals];
@@ -331,7 +356,9 @@ export function DataProvider({ children }) {
       localStorage.setItem('finance-goals', JSON.stringify(newGoals));
     } else {
       const { error } = await supabase.from('savings_goals').upsert(goalData);
-      if (!error) {
+      if (error) {
+        console.error("DEBUG: Insert/Update savings_goals error:", error);
+      } else {
         setSavingsGoals(prev => {
           const idx = prev.findIndex(g => g.id === goal.id);
           if (idx >= 0) return prev.map(g => g.id === goal.id ? goalData : g);
@@ -339,7 +366,7 @@ export function DataProvider({ children }) {
         });
       }
     }
-  }, [partnership, savingsGoals]);
+  }, [partnership, savingsGoals, isDemoMode, user]);
 
   const deleteSavingsGoal = useCallback(async (id) => {
     if (isDemoMode) {

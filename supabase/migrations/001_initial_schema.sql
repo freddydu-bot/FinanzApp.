@@ -351,3 +351,44 @@ CREATE TRIGGER update_budgets_updated_at BEFORE UPDATE ON budgets
 
 CREATE TRIGGER update_recurring_expenses_updated_at BEFORE UPDATE ON recurring_expenses
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================
+-- 11. SAVINGS GOALS TABLE
+-- ============================================
+CREATE TABLE savings_goals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  partnership_id UUID REFERENCES partnerships(id),
+  user_id UUID REFERENCES profiles(id), -- NULL for shared goals
+  title TEXT NOT NULL,
+  target_amount DECIMAL(12,2) NOT NULL CHECK (target_amount > 0),
+  current_amount DECIMAL(12,2) DEFAULT 0 CHECK (current_amount >= 0),
+  icon TEXT DEFAULT '💰',
+  goal_type TEXT NOT NULL CHECK (goal_type IN ('personal','shared')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE savings_goals ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own and partnership goals"
+  ON savings_goals FOR SELECT USING (
+    (user_id = auth.uid())
+    OR
+    (goal_type = 'shared' AND partnership_id IN (
+      SELECT id FROM partnerships
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+    ))
+  );
+
+CREATE POLICY "Users can manage own and partnership goals"
+  ON savings_goals FOR ALL USING (
+    (user_id = auth.uid())
+    OR
+    (goal_type = 'shared' AND partnership_id IN (
+      SELECT id FROM partnerships
+      WHERE (user1_id = auth.uid() OR user2_id = auth.uid()) AND status = 'active'
+    ))
+  );
+
+CREATE TRIGGER update_savings_goals_updated_at BEFORE UPDATE ON savings_goals
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
