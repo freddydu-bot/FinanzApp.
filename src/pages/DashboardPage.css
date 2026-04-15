@@ -168,9 +168,19 @@
 }
 
 @media (max-width: 800px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-grid { 
+    grid-template-columns: 1fr; 
+    gap: var(--space-sm);
+  }
+  .stat-card {
+    height: auto;
+    padding: var(--space-lg);
+  }
+  .stat-card__value {
+    font-size: var(--text-2xl);
+  }
   .chart-wide, .chart-side, .full-width { grid-column: span 1; }
-  .page-header .flex { flex-direction: column; gap: var(--space-md); }
+  .page-header .flex { flex-direction: column; gap: var(--space-sm); align-items: flex-start; }
 }
 
 /* ---- Achievements Row ---- */

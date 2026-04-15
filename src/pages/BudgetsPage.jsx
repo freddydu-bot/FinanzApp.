@@ -108,7 +108,7 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      <div className="dashboard-grid stagger-children" style={{ marginBottom: 'var(--space-xl)' }}>
+      <div className="dashboard-grid budgets-summary-grid stagger-children">
         <div className="stat-card glass glass--hover">
           <span className="stat-card__label">Presupuesto Total</span>
           <span className="stat-card__value">{formatCurrency(totalBudget)}</span>

@@ -48,3 +48,26 @@
   border-color: var(--accent-primary);
   transform: translateY(-2px);
 }
+.budgets-summary-grid {
+  margin-bottom: var(--space-xl);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 800px) {
+  .budgets-summary-grid {
+    margin-bottom: var(--space-md);
+  }
+
+  .premium-table th, 
+  .premium-table td {
+    padding: var(--space-sm) !important;
+  }
+
+  .premium-table th {
+    font-size: 10px;
+  }
+
+  .category-name {
+    font-size: 13px;
+  }
+}
