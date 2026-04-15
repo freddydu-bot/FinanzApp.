@@ -92,10 +92,15 @@ export function DataProvider({ children }) {
       // 5. Build Categories list
       try {
         const { data: cData } = await supabase.from('categories').select('*');
-        if (cData && cData.length > 0) {
-          setCategories(cData);
-        } else {
-          setCategories(DEFAULT_CATEGORIES);
+        const dbCategories = cData || [];
+        const merged = [...dbCategories];
+        
+        DEFAULT_CATEGORIES.forEach(def => {
+          if (!merged.find(m => String(m.id) === String(def.id) || m.name === def.name)) {
+            merged.push(def);
+          }
+        });
+        setCategories(merged);
       } catch (catErr) {
         setCategories(DEFAULT_CATEGORIES);
       }

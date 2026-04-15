@@ -94,10 +94,10 @@ export default function BudgetsPage() {
   const unbudgetedCategories = categories.filter((c) => !budgetedCatIds.includes(c.id));
 
   return (
-    <div className="budgets-page animate-fadeIn">
+    <div className="budgets-page">
       <div className="page-header">
-        <div className="flex justify-between items-start">
-          <div>
+        <div className="flex justify-between items-start flex-wrap gap-md">
+          <div className="min-w-[200px]">
             <h1 className="page-header__title">Control Presupuestario</h1>
             <p className="page-header__subtitle">{getMonthName(selectedMonth)} {selectedYear}</p>
           </div>
@@ -108,7 +108,7 @@ export default function BudgetsPage() {
         </div>
       </div>
 
-      <div className="dashboard-grid budgets-summary-grid stagger-children">
+      <div className="dashboard-grid budgets-summary-grid">
         <div className="stat-card glass glass--hover">
           <span className="stat-card__label">Presupuesto Total</span>
           <span className="stat-card__value">{formatCurrency(totalBudget)}</span>
@@ -150,7 +150,10 @@ export default function BudgetsPage() {
           <tbody>
             {currentBudgets.map((budget) => {
               const cat = getCategoryInfo(budget.category_id);
-              const spent = relevantExpenses.filter((e) => e.category_id === budget.category_id).reduce((s, e) => s + Number(e.amount), 0);
+              // Spend calculation: Match ID by string to avoid UUID object issues
+              const spent = relevantExpenses
+                .filter((e) => String(e.category_id) === String(budget.category_id))
+                .reduce((s, e) => s + Number(e.amount), 0);
               const sem = getSemaphoreStatus(spent, budget.amount, cat.name);
               const remaining = budget.amount - spent;
               const isEditing = editingId === budget.id;

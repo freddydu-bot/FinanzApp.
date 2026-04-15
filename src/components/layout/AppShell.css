@@ -67,7 +67,7 @@
 
   .app-shell__content {
     padding: var(--space-md);
-    padding-top: calc(var(--topbar-height) + var(--space-xs));
+    padding-top: calc(var(--topbar-height) + var(--space-md));
   }
 
   .page-header {

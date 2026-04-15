@@ -71,3 +71,31 @@
     font-size: 13px;
   }
 }
+
+/* Header fixes for consistency */
+.page-header .flex {
+  width: 100%;
+}
+
+@media (min-width: 801px) {
+  .page-header .flex {
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 800px) {
+  .page-header .flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .segmented-control {
+    width: 100%;
+    margin-top: var(--space-sm);
+  }
+  
+  .segmented-control__btn {
+    flex: 1;
+    text-align: center;
+  }
+}

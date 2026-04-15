@@ -13,11 +13,11 @@
 }
 
 .stat-card {
-  height: 160px;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: var(--space-xl);
+  padding: var(--space-lg);
   border-left: 4px solid transparent;
 }
 
