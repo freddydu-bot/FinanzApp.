@@ -405,8 +405,10 @@ export function DataProvider({ children }) {
 
   // CRUD: Recurring Expenses
   const addRecurring = useCallback(async (recurring) => {
+    console.log("DEBUG: Attempting to add recurring expense:", recurring);
     const id = crypto.randomUUID();
     const newRec = { ...recurring, id, user_id: user.id, partnership_id: partnership?.id };
+    
     if (isDemoMode) {
       const updated = [...recurringExpenses, newRec];
       setRecurringExpenses(updated);
@@ -414,9 +416,10 @@ export function DataProvider({ children }) {
     } else {
       const { error } = await supabase.from('recurring_expenses').insert(newRec);
       if (error) {
-        console.error("Error saving recurring:", error);
+        console.error("DEBUG: Error saving recurring to Supabase:", error);
         throw error;
       }
+      console.log("DEBUG: Recurring expense saved successfully:", newRec);
       setRecurringExpenses(prev => [...prev, newRec]);
     }
     return newRec;

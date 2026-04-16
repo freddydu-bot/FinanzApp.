@@ -29,31 +29,36 @@ export default function RecurringPage() {
     return recurringExpenses.filter((r) => r.user_id === user?.id || r.expense_type === 'shared');
   }, [recurringExpenses, user]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.category_id || !form.amount) { 
       toast.warning('Completa los campos requeridos'); 
       return; 
     }
 
-    const data = { 
-      ...form, 
-      amount: Number(form.amount), 
-      day_of_month: Number(form.day_of_month), 
-      user_id: editing ? editing.user_id : user.id, 
-      partnership_id: partnership.id, 
-      is_active: editing ? editing.is_active : true 
+    try {
+      const data = { 
+        ...form, 
+        amount: Number(form.amount), 
+        day_of_month: Number(form.day_of_month), 
+        user_id: editing ? editing.user_id : user.id, 
+        partnership_id: partnership?.id, 
+        is_active: editing ? editing.is_active : true 
     };
 
     if (editing) {
-      updateRecurring(editing.id, data);
+      await updateRecurring(editing.id, data);
       toast.success('Gasto recurrente actualizado');
     } else {
-      addRecurring(data);
+      await addRecurring(data);
       toast.success('Gasto recurrente creado');
     }
     setShowForm(false);
     setEditing(null);
+    } catch (err) {
+      console.error("Error submitting recurring:", err);
+      toast.error('Error al procesar: ' + err.message);
+    }
   };
 
   const handleEdit = (rec) => {
