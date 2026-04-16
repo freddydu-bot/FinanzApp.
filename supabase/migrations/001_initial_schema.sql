@@ -156,8 +156,13 @@ CREATE TABLE recurring_expenses (
 
 ALTER TABLE recurring_expenses ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own recurring expenses"
-  ON recurring_expenses FOR SELECT USING (user_id = auth.uid());
+CREATE POLICY "Users can view relevant recurring expenses"
+  ON recurring_expenses FOR SELECT USING (
+    user_id = auth.uid() OR 
+    partnership_id IN (
+      SELECT id FROM partnerships WHERE user1_id = auth.uid() OR user2_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Users can manage own recurring expenses"
   ON recurring_expenses FOR ALL USING (user_id = auth.uid());

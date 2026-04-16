@@ -89,6 +89,16 @@ export function DataProvider({ children }) {
       const { data: sData } = await svgQuery;
       setSavingsGoals(sData || []);
 
+      // 4.5 Load Recurring Expenses
+      let recQuery = supabase.from('recurring_expenses').select('*');
+      if (currentPartnership) {
+        recQuery = recQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
+      } else {
+        recQuery = recQuery.eq('user_id', user.id);
+      }
+      const { data: recData } = await recQuery;
+      setRecurringExpenses(recData || []);
+
       // 5. Build Categories list
       try {
         const { data: cData } = await supabase.from('categories').select('*');
@@ -393,6 +403,55 @@ export function DataProvider({ children }) {
     }
   }, [savingsGoals]);
 
+  // CRUD: Recurring Expenses
+  const addRecurring = useCallback(async (recurring) => {
+    const id = crypto.randomUUID();
+    const newRec = { ...recurring, id, user_id: user.id, partnership_id: partnership?.id };
+    if (isDemoMode) {
+      const updated = [...recurringExpenses, newRec];
+      setRecurringExpenses(updated);
+      localStorage.setItem('finance-recurring', JSON.stringify(updated));
+    } else {
+      const { error } = await supabase.from('recurring_expenses').insert(newRec);
+      if (error) {
+        console.error("Error saving recurring:", error);
+        throw error;
+      }
+      setRecurringExpenses(prev => [...prev, newRec]);
+    }
+    return newRec;
+  }, [user, partnership, recurringExpenses]);
+
+  const updateRecurring = useCallback(async (id, updates) => {
+    if (isDemoMode) {
+      const updated = recurringExpenses.map(r => r.id === id ? { ...r, ...updates } : r);
+      setRecurringExpenses(updated);
+      localStorage.setItem('finance-recurring', JSON.stringify(updated));
+    } else {
+      const { error } = await supabase.from('recurring_expenses').update(updates).eq('id', id);
+      if (error) {
+        console.error("Error updating recurring:", error);
+        throw error;
+      }
+      setRecurringExpenses(prev => prev.map(r => r.id === id ? { ...r, ...updates } : r));
+    }
+  }, [recurringExpenses]);
+
+  const deleteRecurring = useCallback(async (id) => {
+    if (isDemoMode) {
+      const updated = recurringExpenses.filter(r => r.id !== id);
+      setRecurringExpenses(updated);
+      localStorage.setItem('finance-recurring', JSON.stringify(updated));
+    } else {
+      const { error } = await supabase.from('recurring_expenses').delete().eq('id', id);
+      if (error) {
+        console.error("Error deleting recurring:", error);
+        throw error;
+      }
+      setRecurringExpenses(prev => prev.filter(r => r.id !== id));
+    }
+  }, [recurringExpenses]);
+
   // Partnership management
   const createPartnership = useCallback(async (partnerEmail) => {
     if (isDemoMode) return;
@@ -452,7 +511,10 @@ export function DataProvider({ children }) {
       upsertBudget,
       upsertSavingsGoal,
       deleteSavingsGoal,
-      createPartnership, // Exported new function
+      addRecurring,
+      updateRecurring,
+      deleteRecurring,
+      createPartnership,
       loadRealData
     }}>
       {children}
