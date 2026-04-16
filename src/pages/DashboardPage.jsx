@@ -20,7 +20,7 @@ const PIE_COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { partnership, partner, expenses, budgets, categories, savingsGoals, selectedMonth, selectedYear, loading } = useData();
+  const { partnership, partner, expenses, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading } = useData();
   const [view, setView] = useState('personal');
 
   if (loading) {
@@ -30,6 +30,21 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  // ALERTS: Recurring payments due soon
+  const upcomingPayments = useMemo(() => {
+    const today = new Date();
+    const currentDay = today.getDate();
+    // STRICT PRIVACY: Show my personal recurring OR shared ones.
+    return recurringExpenses.filter(rec => {
+      if (!rec.is_active) return false;
+      if (rec.expense_type === 'personal' && rec.user_id !== user?.id) return false;
+      
+      const diff = rec.day_of_month - currentDay;
+      // Show alerts for today, tomorrow, or day after (and 1 day overdue)
+      return diff >= -1 && diff <= 3;
+    }).sort((a, b) => a.day_of_month - b.day_of_month);
+  }, [recurringExpenses, user]);
 
   // Filter expenses for selected period
   const periodExpenses = useMemo(
@@ -138,6 +153,32 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ALERTS ROW (Recurrentes próximos) */}
+      {upcomingPayments.length > 0 && (
+        <div className="alerts-row animate-fadeIn mb-lg">
+          {upcomingPayments.map(rec => {
+            const cat = categories.find(c => c.id === rec.category_id) || { icon: '📦' };
+            const today = new Date().getDate();
+            const isToday = rec.day_of_month === today;
+            const isOverdue = rec.day_of_month < today;
+            
+            return (
+              <div key={rec.id} className={`alert-card glass ${isToday ? 'border--warning' : isOverdue ? 'border--danger' : ''}`}>
+                <div className="alert-card__icon">{isToday ? '🔔' : isOverdue ? '⚠️' : '📅'}</div>
+                <div className="alert-card__content">
+                  <span className="alert-card__title">
+                    {isToday ? 'Pagar Hoy' : isOverdue ? 'Vencido' : 'Próximo Pago'}
+                  </span>
+                  <span className="alert-card__desc">
+                    {cat.icon} {rec.merchant || rec.description}: {formatCurrency(rec.amount)} (Día {rec.day_of_month})
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ACHIEVEMENTS ROW (PREMIUM) */}
       {achievements.length > 0 && (

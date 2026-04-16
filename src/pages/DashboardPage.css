@@ -184,6 +184,55 @@
 }
 
 /* ---- Achievements Row ---- */
+.alerts-row {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-xs);
+}
+
+.alert-card {
+  flex: 0 0 auto;
+  min-width: 250px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-left: 4px solid var(--accent-primary);
+}
+
+.alert-card.border--warning { border-left-color: var(--color-warning); }
+.alert-card.border--danger { border-left-color: var(--color-danger); }
+
+.alert-card__icon {
+  font-size: 20px;
+}
+
+.alert-card__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.alert-card__title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.alert-card__desc {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+@media (max-width: 800px) {
+  .alert-card {
+    min-width: 220px;
+    padding: var(--space-sm);
+  }
+}
+
 .achievements-row {
   display: flex;
   gap: var(--space-md);
