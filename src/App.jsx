@@ -6,6 +6,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import IncomesPage from './pages/IncomesPage';
 import ExpensesPage from './pages/ExpensesPage';
 import BudgetsPage from './pages/BudgetsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
@@ -83,6 +84,7 @@ function AppRoutes() {
         element={user ? <Navigate to="/" replace /> : <LoginPage />}
       />
       <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/incomes" element={<ProtectedRoute><IncomesPage /></ProtectedRoute>} />
       <Route path="/expenses" element={<ProtectedRoute><ExpensesPage /></ProtectedRoute>} />
       <Route path="/budgets" element={<ProtectedRoute><BudgetsPage /></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />

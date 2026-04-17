@@ -132,3 +132,50 @@ export function calculateBudgetVsActual(budgets, expenses, categories) {
     };
   });
 }
+
+/**
+ * Calculate financial summary with cumulative dragging
+ */
+export function calculateFinancialSummary(incomes, expenses, month, year) {
+  // Use noon to avoid timezone shifts
+  const getPeriodKey = (dateStr) => {
+    if (!dateStr) return { m: 0, y: 0 };
+    const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const d = new Date(clean + 'T12:00:00');
+    return { m: d.getMonth() + 1, y: d.getFullYear() };
+  };
+
+  // Current period totals
+  const currentIncomes = incomes.filter(i => {
+    const { m, y } = getPeriodKey(i.date);
+    return m === month && y === year;
+  });
+  const currentExpenses = expenses.filter(e => {
+    const { m, y } = getPeriodKey(e.date);
+    return m === month && y === year;
+  });
+  
+  const totalIncomes = currentIncomes.reduce((s, i) => s + Number(i.amount), 0);
+  const totalExpenses = currentExpenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  // Dragged balance from all time before current period
+  const previousIncomes = incomes.filter(i => {
+    const { m, y } = getPeriodKey(i.date);
+    return (y < year) || (y === year && m < month);
+  }).reduce((s, i) => s + Number(i.amount), 0);
+
+  const previousExpenses = expenses.filter(e => {
+    const { m, y } = getPeriodKey(e.date);
+    return (y < year) || (y === year && m < month);
+  }).reduce((s, e) => s + Number(e.amount), 0);
+
+  const initialBalance = previousIncomes - previousExpenses;
+  const finalBalance = initialBalance + totalIncomes - totalExpenses;
+
+  return {
+    initialBalance,
+    totalIncomes,
+    totalExpenses,
+    finalBalance,
+  };
+}

@@ -4,6 +4,7 @@ import './Sidebar.css';
 
 const navItems = [
   { path: '/', icon: '📊', label: 'Dashboard', id: 'nav-dashboard' },
+  { path: '/incomes', icon: '💰', label: 'Ingresos', id: 'nav-incomes' },
   { path: '/expenses', icon: '💳', label: 'Gastos', id: 'nav-expenses' },
   { path: '/budgets', icon: '🎯', label: 'Presupuestos', id: 'nav-budgets' },
   { path: '/analytics', icon: '📈', label: 'Analítica', id: 'nav-analytics' },

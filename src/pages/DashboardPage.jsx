@@ -46,6 +46,10 @@ export default function DashboardPage() {
     }).sort((a, b) => a.day_of_month - b.day_of_month);
   }, [recurringExpenses, user]);
 
+  const financialSummary = useMemo(() => {
+    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear);
+  }, [incomes, expenses, selectedMonth, selectedYear]);
+
   // Filter expenses for selected period
   const periodExpenses = useMemo(
     () => filterByPeriod(expenses, selectedMonth, selectedYear),
@@ -194,6 +198,30 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* FINANCIAL SUMMARY ROW (NEW) */}
+      <div className="financial-summary-row mb-lg animate-fadeIn">
+        <div className="summary-item glass" title="Saldo que traes del mes pasado">
+          <span className="summary-item__label">Saldo Inicial Arrastrado</span>
+          <span className={`summary-item__value ${financialSummary.initialBalance >= 0 ? 'text-success' : 'text-danger'}`}>
+            {formatCurrency(financialSummary.initialBalance)}
+          </span>
+        </div>
+        <div className="summary-item glass">
+          <span className="summary-item__label">Ingresos</span>
+          <span className="summary-item__value text-primary">+{formatCurrency(financialSummary.totalIncomes)}</span>
+        </div>
+        <div className="summary-item glass">
+          <span className="summary-item__label">Gastos</span>
+          <span className="summary-item__value text-warning">-{formatCurrency(financialSummary.totalExpenses)}</span>
+        </div>
+        <div className="summary-item glass highlight" title="Dinero final con el que cierras el mes">
+          <span className="summary-item__label">Saldo Final</span>
+          <span className={`summary-item__value ${financialSummary.finalBalance >= 0 ? 'text-success' : 'text-danger'}`}>
+            {formatCurrency(financialSummary.finalBalance)}
+          </span>
+        </div>
+      </div>
 
       <div className="dashboard-grid">
         {view === 'personal' ? (

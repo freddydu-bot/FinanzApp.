@@ -183,6 +183,41 @@
   .page-header .flex { flex-direction: column; gap: var(--space-sm); align-items: flex-start; }
 }
 
+/* ---- Financial Summary Row ---- */
+.financial-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-md);
+}
+
+.summary-item {
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 80px;
+}
+
+.summary-item.highlight {
+  border-bottom: 3px solid var(--accent-primary);
+}
+
+.summary-item__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+.summary-item__value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+
 /* ---- Achievements Row ---- */
 .alerts-row {
   display: flex;

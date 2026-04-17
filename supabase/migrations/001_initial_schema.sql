@@ -136,6 +136,34 @@ CREATE POLICY "Users can delete custom categories"
   );
 
 -- ============================================
+-- 3.5 INCOMES TABLE
+-- ============================================
+CREATE TABLE incomes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id),
+  partnership_id UUID REFERENCES partnerships(id),
+  name TEXT NOT NULL,
+  amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  income_type TEXT NOT NULL CHECK (income_type IN ('personal','shared')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE incomes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view relevant incomes"
+  ON incomes FOR SELECT USING (
+    user_id = auth.uid() OR 
+    partnership_id IN (
+      SELECT id FROM partnerships WHERE user1_id = auth.uid() OR user2_id = auth.uid()
+    )
+  );
+
+CREATE POLICY "Users can manage own incomes"
+  ON incomes FOR ALL USING (user_id = auth.uid());
+
+-- ============================================
 -- 4. RECURRING EXPENSES TABLE (before expenses due to FK)
 -- ============================================
 CREATE TABLE recurring_expenses (

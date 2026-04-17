@@ -19,6 +19,7 @@ export function DataProvider({ children }) {
   const [partner, setPartner] = useState(null);
   const [categories, setCategories] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
   const [budgets, setBudgets] = useState([]);
   const [recurringExpenses, setRecurringExpenses] = useState([]);
   const [savingsGoals, setSavingsGoals] = useState([]);
@@ -68,6 +69,16 @@ export function DataProvider({ children }) {
       
       const { data: eData } = await expQuery;
       setExpenses(eData || []);
+
+      // 2.5 Load Incomes
+      let incQuery = supabase.from('incomes').select('*');
+      if (currentPartnership) {
+        incQuery = incQuery.or(`user_id.eq.${user.id},partnership_id.eq.${currentPartnership.id}`);
+      } else {
+        incQuery = incQuery.eq('user_id', user.id);
+      }
+      const { data: incData } = await incQuery;
+      setIncomes(incData || []);
 
       // 3. Load Budgets
       let budQuery = supabase.from('budgets').select('*');
@@ -246,6 +257,54 @@ export function DataProvider({ children }) {
       if (!error) setExpenses(prev => prev.filter(e => e.id !== id));
     }
   }, [expenses]);
+
+  // CRUD: Incomes
+  const addIncome = useCallback(async (income) => {
+    const id = crypto.randomUUID();
+    const newInc = { 
+      ...income, 
+      id, 
+      user_id: user.id, 
+      partnership_id: partnership?.id, 
+      created_at: new Date().toISOString() 
+    };
+
+    if (isDemoMode) {
+      setIncomes(prev => [newInc, ...prev]);
+      localStorage.setItem('finance-incomes', JSON.stringify([newInc, ...incomes]));
+      return newInc;
+    } else {
+      const { error } = await supabase.from('incomes').insert(newInc);
+      if (error) {
+        console.error("Error al guardar ingreso:", error);
+        throw new Error(error.message);
+      }
+      setIncomes(prev => [newInc, ...prev]);
+      return newInc;
+    }
+  }, [user, partnership, incomes]);
+
+  const updateIncome = useCallback(async (id, updates) => {
+    if (isDemoMode) {
+      const newIncomes = incomes.map((i) => (i.id === id ? { ...i, ...updates } : i));
+      setIncomes(newIncomes);
+      localStorage.setItem('finance-incomes', JSON.stringify(newIncomes));
+    } else {
+      const { error } = await supabase.from('incomes').update(updates).eq('id', id);
+      if (!error) setIncomes(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+    }
+  }, [incomes]);
+
+  const deleteIncome = useCallback(async (id) => {
+    if (isDemoMode) {
+      const newIncomes = incomes.filter((i) => i.id !== id);
+      setIncomes(newIncomes);
+      localStorage.setItem('finance-incomes', JSON.stringify(newIncomes));
+    } else {
+      const { error } = await supabase.from('incomes').delete().eq('id', id);
+      if (!error) setIncomes(prev => prev.filter(i => i.id !== id));
+    }
+  }, [incomes]);
 
   // CRUD: Categories
   const addCategory = useCallback(async (category) => {
@@ -497,6 +556,7 @@ export function DataProvider({ children }) {
       partner,
       categories,
       expenses,
+      incomes,
       budgets,
       recurringExpenses,
       savingsGoals,
@@ -508,6 +568,9 @@ export function DataProvider({ children }) {
       addExpense,
       updateExpense,
       deleteExpense,
+      addIncome,
+      updateIncome,
+      deleteIncome,
       addCategory,
       updateCategory,
       deleteCategory,
