@@ -20,7 +20,7 @@ const PIE_COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { partnership, partner, expenses, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading } = useData();
+  const { partnership, partner, expenses, incomes, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading } = useData();
   const [view, setView] = useState('personal');
 
   if (loading) {
