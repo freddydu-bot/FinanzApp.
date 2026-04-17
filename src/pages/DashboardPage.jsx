@@ -10,6 +10,7 @@ import {
   calculateContribution,
   calculateFixedVsVariable,
   getSemaphoreStatus,
+  calculateFinancialSummary,
 } from '../utils/calculations';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
