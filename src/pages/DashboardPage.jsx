@@ -252,10 +252,12 @@ export default function DashboardPage() {
           </span>
         </div>
         <div className="summary-item glass">
-          <span className="summary-item__label">Ingresos</span>
+          <span className="summary-item__label">
+            {view === 'personal' ? 'INGRESOS TOTALES' : 'INGRESOS CONJUNTOS'}
+          </span>
           <span className="summary-item__value text-primary">+{formatCurrency(activeSummary.totalIncomes)}</span>
-          <span className="summary-item__desc text-xs" style={{ opacity: 0.7 }}>
-            Vista: {view === 'personal' ? 'Individual' : 'Compartida'}
+          <span className="summary-item__desc text-xs" style={{ opacity: 0.7, color: 'var(--accent-primary)' }}>
+            ✓ Filtrado para {view === 'personal' ? 'ti' : 'la pareja'}
           </span>
         </div>
         <div className="summary-item glass">
