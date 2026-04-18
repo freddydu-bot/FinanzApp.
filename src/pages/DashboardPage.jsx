@@ -47,22 +47,60 @@ export default function DashboardPage() {
     }).sort((a, b) => a.day_of_month - b.day_of_month);
   }, [recurringExpenses, user]);
 
-  const financialSummary = useMemo(() => {
-    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear, user?.id);
-  }, [incomes, expenses, selectedMonth, selectedYear, user]);
-
-  // Individual vs Joint Income Logic
+  // Individual vs Joint Split Logic
   const splitPct = partnership?.user1_split_pct || 50;
   const mySplit = user?.id === partnership?.user1_id ? splitPct : 100 - splitPct;
-  
-  const myIncomeTotal = financialSummary.personalIncomesTotal + (financialSummary.sharedIncomesTotal * (mySplit / 100));
-  const jointIncomeTotal = financialSummary.sharedIncomesTotal;
 
-  // Filter expenses for selected period
+  // Financial summaries for different views
+  const personalSummary = useMemo(() => {
+    const personalIncomes = incomes.filter(i => i.income_type === 'personal' && i.user_id === user?.id);
+    const sharedIncomesPart = incomes.filter(i => i.income_type === 'shared').map(i => ({
+      ...i,
+      amount: Number(i.amount) * (mySplit / 100)
+    }));
+    const personalExpenses = expenses.filter(e => e.expense_type === 'personal' && e.user_id === user?.id);
+    const sharedExpensesPart = expenses.filter(e => e.expense_type === 'shared').map(e => ({
+      ...e,
+      amount: Number(e.amount) * (mySplit / 100)
+    }));
+
+    return calculateFinancialSummary([...personalIncomes, ...sharedIncomesPart], [...personalExpenses, ...sharedExpensesPart], selectedMonth, selectedYear, user?.id);
+  }, [incomes, expenses, selectedMonth, selectedYear, user, mySplit]);
+
+  const sharedSummary = useMemo(() => {
+    const sharedIncomes = incomes.filter(i => i.income_type === 'shared');
+    const sharedExpenses = expenses.filter(e => e.expense_type === 'shared');
+    return calculateFinancialSummary(sharedIncomes, sharedExpenses, selectedMonth, selectedYear, user?.id);
+  }, [incomes, expenses, selectedMonth, selectedYear, user]);
+
+  const activeSummary = view === 'personal' ? personalSummary : sharedSummary;
+
+  // MOVEMENTS LIST: Incomes + Expenses
   const periodExpenses = useMemo(
     () => filterByPeriod(expenses, selectedMonth, selectedYear),
     [expenses, selectedMonth, selectedYear]
   );
+  
+  const periodIncomes = useMemo(
+    () => filterByPeriod(incomes, selectedMonth, selectedYear),
+    [incomes, selectedMonth, selectedYear]
+  );
+
+  const movements = useMemo(() => {
+    const exps = (view === 'personal' 
+      ? periodExpenses.filter(e => e.expense_type === 'personal' && e.user_id === user?.id)
+      : periodExpenses.filter(e => e.expense_type === 'shared')
+    ).map(e => ({ ...e, type: 'expense' }));
+
+    const incs = (view === 'personal'
+      ? periodIncomes.filter(i => i.income_type === 'personal' && i.user_id === user?.id)
+      : periodIncomes.filter(i => i.income_type === 'shared')
+    ).map(i => ({ ...i, type: 'income' }));
+
+    return [...exps, ...incs].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [view, periodExpenses, periodIncomes, user]);
+
+  const myPersonal = periodExpenses.filter((e) => e.user_id === user?.id && e.expense_type === 'personal');
 
   const myPersonal = periodExpenses.filter((e) => e.user_id === user?.id && e.expense_type === 'personal');
   const sharedExpenses = periodExpenses.filter((e) => e.expense_type === 'shared');
@@ -207,29 +245,25 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* FINANCIAL SUMMARY ROW (NEW) */}
       <div className="financial-summary-row mb-lg animate-fadeIn">
         <div className="summary-item glass" title="Saldo que traes del mes pasado">
-          <span className="summary-item__label">Saldo Inicial Arrastrado</span>
-          <span className={`summary-item__value ${financialSummary.initialBalance >= 0 ? 'text-success' : 'text-danger'}`}>
-            {formatCurrency(financialSummary.initialBalance)}
+          <span className="summary-item__label">Saldo Inicial</span>
+          <span className={`summary-item__value ${activeSummary.initialBalance >= 0 ? 'text-success' : 'text-danger'}`}>
+            {formatCurrency(activeSummary.initialBalance)}
           </span>
         </div>
         <div className="summary-item glass">
-          <span className="summary-item__label">Mis Ingresos</span>
-          <span className="summary-item__value text-primary">{formatCurrency(myIncomeTotal)}</span>
-          <span className="summary-item__desc text-xs" style={{ opacity: 0.7 }}>
-            Conjunto: {formatCurrency(jointIncomeTotal)}
-          </span>
+          <span className="summary-item__label">Ingresos ({view === 'personal' ? 'Míos' : 'Compartidos'})</span>
+          <span className="summary-item__value text-primary">+{formatCurrency(activeSummary.totalIncomes)}</span>
         </div>
         <div className="summary-item glass">
           <span className="summary-item__label">Gastos</span>
-          <span className="summary-item__value text-warning">-{formatCurrency(financialSummary.totalExpenses)}</span>
+          <span className="summary-item__value text-warning">-{formatCurrency(activeSummary.totalExpenses)}</span>
         </div>
         <div className="summary-item glass highlight" title="Dinero final con el que cierras el mes">
           <span className="summary-item__label">Saldo Final</span>
-          <span className={`summary-item__value ${financialSummary.finalBalance >= 0 ? 'text-success' : 'text-danger'}`}>
-            {formatCurrency(financialSummary.finalBalance)}
+          <span className={`summary-item__value ${activeSummary.finalBalance >= 0 ? 'text-success' : 'text-danger'}`}>
+            {formatCurrency(activeSummary.finalBalance)}
           </span>
         </div>
       </div>
@@ -355,29 +389,30 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {(view === 'personal' ? myPersonal : sharedExpenses)
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
-                .slice(0, 8)
-                .map((exp) => {
-                  const cat = categories.find(c => c.id === exp.category_id) || { name: 'Otro', icon: '📦' };
+              {movements
+                .slice(0, 10)
+                .map((mov) => {
+                  const cat = categories.find(c => c.id === mov.category_id) || { name: (mov.type === 'income' ? 'Ingreso' : 'Otro'), icon: (mov.type === 'income' ? '💰' : '📦') };
+                  const isIncome = mov.type === 'income';
                   return (
-                    <tr key={exp.id}>
+                    <tr key={mov.id}>
                       <td className="font-bold">
-                        {exp.title || exp.merchant || (exp.description?.length > 30 ? exp.description.substring(0, 30) + '...' : exp.description) || 'Gasto registrado'}
+                        {mov.name || mov.title || mov.merchant || (mov.description?.length > 30 ? mov.description.substring(0, 30) + '...' : mov.description) || (isIncome ? 'Ingreso registrado' : 'Gasto registrado')}
+                        {view === 'personal' && mov.income_type === 'shared' && <span className="text-xs text-tertiary ml-sm">(Parte compartida)</span>}
                       </td>
                       <td>
                         <span className="cat-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                           {cat.icon} {cat.name}
                         </span>
                       </td>
-                      <td className="text-tertiary text-xs">{exp.date}</td>
-                      <td className="text-right font-bold" style={{ color: exp.expense_type === 'shared' ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
-                        {formatCurrency(exp.amount)}
+                      <td className="text-tertiary text-xs">{mov.date}</td>
+                      <td className={`text-right font-bold ${isIncome ? 'text-success' : ''}`}>
+                        {isIncome ? '+' : '-'}{formatCurrency(mov.amount)}
                       </td>
                     </tr>
                   );
                 })}
-              {(view === 'personal' ? myPersonal : sharedExpenses).length === 0 && (
+              {movements.length === 0 && (
                 <tr>
                   <td colSpan="4" className="text-center p-xl text-tertiary italic">No hay registros detallados para mostrar</td>
                 </tr>
