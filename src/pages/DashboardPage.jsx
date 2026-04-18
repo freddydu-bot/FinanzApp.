@@ -111,8 +111,8 @@ export default function DashboardPage() {
   const mySharedTotal = mySharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const partnerSharedTotal = partnerSharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
-  // Financial load & Contribution
-  const myLoad = calculateFinancialLoad(myPersonalTotal, sharedTotal, mySplit);
+  // Financial load (Real spending: Personal + what I actually paid from shared)
+  const myLoad = myPersonalTotal + mySharedTotal;
   const contribution = calculateContribution(mySharedTotal, partnerSharedTotal);
 
   // Budget data
