@@ -87,18 +87,19 @@ export default function DashboardPage() {
   );
 
   const movements = useMemo(() => {
+    // Current period filter
     const exps = (view === 'personal' 
-      ? periodExpenses.filter(e => e.expense_type === 'personal' && e.user_id === user?.id)
+      ? periodExpenses.filter(e => (e.expense_type === 'personal' && e.user_id === user?.id) || e.expense_type === 'shared')
       : periodExpenses.filter(e => e.expense_type === 'shared')
     ).map(e => ({ ...e, type: 'expense' }));
 
     const incs = (view === 'personal'
-      ? periodIncomes.filter(i => i.income_type === 'personal' && i.user_id === user?.id)
+      ? periodIncomes.filter(i => (i.income_type === 'personal' && i.user_id === user?.id) || i.income_type === 'shared')
       : periodIncomes.filter(i => i.income_type === 'shared')
     ).map(i => ({ ...i, type: 'income' }));
 
     return [...exps, ...incs].sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [view, periodExpenses, periodIncomes, user]);
+  }, [view, periodExpenses, periodIncomes, user?.id]);
 
   const myPersonal = periodExpenses.filter((e) => e.user_id === user?.id && e.expense_type === 'personal');
 
