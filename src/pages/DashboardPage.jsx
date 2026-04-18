@@ -106,15 +106,12 @@ export default function DashboardPage() {
   const mySharedExpenses = sharedExpenses.filter((e) => e.user_id === user?.id);
   const partnerSharedExpenses = sharedExpenses.filter((e) => e.user_id !== user?.id);
 
-  // Totals
   const myPersonalTotal = myPersonal.reduce((s, e) => s + Number(e.amount), 0);
   const sharedTotal = sharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const mySharedTotal = mySharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const partnerSharedTotal = partnerSharedExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
   // Financial load & Contribution
-  const splitPct = partnership?.user1_split_pct || 50;
-  const mySplit = user?.id === partnership?.user1_id ? splitPct : 100 - splitPct;
   const myLoad = calculateFinancialLoad(myPersonalTotal, sharedTotal, mySplit);
   const contribution = calculateContribution(mySharedTotal, partnerSharedTotal);
 
