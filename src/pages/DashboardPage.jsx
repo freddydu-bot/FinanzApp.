@@ -48,8 +48,15 @@ export default function DashboardPage() {
   }, [recurringExpenses, user]);
 
   const financialSummary = useMemo(() => {
-    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear);
-  }, [incomes, expenses, selectedMonth, selectedYear]);
+    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear, user?.id);
+  }, [incomes, expenses, selectedMonth, selectedYear, user]);
+
+  // Individual vs Joint Income Logic
+  const splitPct = partnership?.user1_split_pct || 50;
+  const mySplit = user?.id === partnership?.user1_id ? splitPct : 100 - splitPct;
+  
+  const myIncomeTotal = financialSummary.personalIncomesTotal + (financialSummary.sharedIncomesTotal * (mySplit / 100));
+  const jointIncomeTotal = financialSummary.sharedIncomesTotal;
 
   // Filter expenses for selected period
   const periodExpenses = useMemo(
@@ -209,8 +216,11 @@ export default function DashboardPage() {
           </span>
         </div>
         <div className="summary-item glass">
-          <span className="summary-item__label">Ingresos</span>
-          <span className="summary-item__value text-primary">+{formatCurrency(financialSummary.totalIncomes)}</span>
+          <span className="summary-item__label">Mis Ingresos</span>
+          <span className="summary-item__value text-primary">{formatCurrency(myIncomeTotal)}</span>
+          <span className="summary-item__desc text-xs" style={{ opacity: 0.7 }}>
+            Conjunto: {formatCurrency(jointIncomeTotal)}
+          </span>
         </div>
         <div className="summary-item glass">
           <span className="summary-item__label">Gastos</span>

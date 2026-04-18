@@ -26,8 +26,13 @@ export default function IncomesPage() {
 
   const summary = useMemo(() => {
     // We pass ALL incomes and expenses to calculate the cumulative dragging
-    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear);
-  }, [incomes, expenses, selectedMonth, selectedYear]);
+    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear, user?.id);
+  }, [incomes, expenses, selectedMonth, selectedYear, user]);
+
+  const splitPct = partnership?.user1_split_pct || 50;
+  const mySplit = user?.id === partnership?.user1_id ? splitPct : 100 - splitPct;
+  const myIncomeTotal = summary.personalIncomesTotal + (summary.sharedIncomesTotal * (mySplit / 100));
+  const jointIncomeTotal = summary.sharedIncomesTotal;
 
   const currentIncomes = useMemo(() => {
     return incomes.filter(i => {
@@ -104,9 +109,18 @@ export default function IncomesPage() {
           <span className="summary-card__desc">Del periodo anterior</span>
         </div>
         <div className="summary-card glass">
-          <span className="summary-card__label">Ingresos del Mes</span>
-          <span className="summary-card__value text-primary">{formatCurrency(summary.totalIncomes)}</span>
-          <span className="summary-card__desc">Período actual</span>
+          <span className="summary-card__label">Mis Ingresos</span>
+          <span className="summary-card__value text-primary">{formatCurrency(myIncomeTotal)}</span>
+          <span className="summary-card__desc">
+            Personal: {formatCurrency(summary.personalIncomesTotal)} + Parte Conjunta
+          </span>
+        </div>
+        <div className="summary-card glass">
+          <span className="summary-card__label">Ingresos Conjuntos</span>
+          <span className="summary-card__value text-info" style={{ color: 'var(--accent-secondary)' }}>
+            {formatCurrency(jointIncomeTotal)}
+          </span>
+          <span className="summary-card__desc">Total en la pareja</span>
         </div>
         <div className="summary-card glass">
           <span className="summary-card__label">Gastos del Mes</span>

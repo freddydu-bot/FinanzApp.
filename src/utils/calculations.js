@@ -134,10 +134,9 @@ export function calculateBudgetVsActual(budgets, expenses, categories) {
 }
 
 /**
- * Calculate financial summary with cumulative dragging
+ * Calculate financial summary with cumulative dragging and privacy-aware splits
  */
-export function calculateFinancialSummary(incomes, expenses, month, year) {
-  // Use noon to avoid timezone shifts
+export function calculateFinancialSummary(incomes, expenses, month, year, currentUserId) {
   const getPeriodKey = (dateStr) => {
     if (!dateStr) return { m: 0, y: 0 };
     const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
@@ -145,37 +144,41 @@ export function calculateFinancialSummary(incomes, expenses, month, year) {
     return { m: d.getMonth() + 1, y: d.getFullYear() };
   };
 
-  // Current period totals
-  const currentIncomes = incomes.filter(i => {
-    const { m, y } = getPeriodKey(i.date);
+  const isCurrent = (item) => {
+    const { m, y } = getPeriodKey(item.date);
     return m === month && y === year;
-  });
-  const currentExpenses = expenses.filter(e => {
-    const { m, y } = getPeriodKey(e.date);
-    return m === month && y === year;
-  });
-  
-  const totalIncomes = currentIncomes.reduce((s, i) => s + Number(i.amount), 0);
-  const totalExpenses = currentExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  };
+
+  const isPrevious = (item) => {
+    const { m, y } = getPeriodKey(item.date);
+    return (y < year) || (y === year && m < month);
+  };
+
+  // PRIVACY LOGIC: Filter data for calculations
+  // Personal incomes are only for the owner. Shared are for everyone.
+  const myTotalIncomes = incomes.filter(i => isCurrent(i));
+  const myTotalExpenses = expenses.filter(e => isCurrent(e));
+
+  const totalIncomes = myTotalIncomes.reduce((s, i) => s + Number(i.amount), 0);
+  const totalExpenses = myTotalExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
   // Dragged balance from all time before current period
-  const previousIncomes = incomes.filter(i => {
-    const { m, y } = getPeriodKey(i.date);
-    return (y < year) || (y === year && m < month);
-  }).reduce((s, i) => s + Number(i.amount), 0);
-
-  const previousExpenses = expenses.filter(e => {
-    const { m, y } = getPeriodKey(e.date);
-    return (y < year) || (y === year && m < month);
-  }).reduce((s, e) => s + Number(e.amount), 0);
+  const previousIncomes = incomes.filter(i => isPrevious(i)).reduce((s, i) => s + Number(i.amount), 0);
+  const previousExpenses = expenses.filter(e => isPrevious(e)).reduce((s, e) => s + Number(e.amount), 0);
 
   const initialBalance = previousIncomes - previousExpenses;
   const finalBalance = initialBalance + totalIncomes - totalExpenses;
+
+  // Granular Breakdown for the UI
+  const sharedIncomesTotal = myTotalIncomes.filter(i => i.income_type === 'shared').reduce((s, i) => s + Number(i.amount), 0);
+  const personalIncomesTotal = myTotalIncomes.filter(i => i.income_type === 'personal' && i.user_id === currentUserId).reduce((s, i) => s + Number(i.amount), 0);
 
   return {
     initialBalance,
     totalIncomes,
     totalExpenses,
     finalBalance,
+    sharedIncomesTotal,
+    personalIncomesTotal
   };
 }
