@@ -102,8 +102,6 @@ export default function DashboardPage() {
   }, [view, periodExpenses, periodIncomes, user?.id]);
 
   const myPersonal = periodExpenses.filter((e) => e.user_id === user?.id && e.expense_type === 'personal');
-
-  const myPersonal = periodExpenses.filter((e) => e.user_id === user?.id && e.expense_type === 'personal');
   const sharedExpenses = periodExpenses.filter((e) => e.expense_type === 'shared');
   const mySharedExpenses = sharedExpenses.filter((e) => e.user_id === user?.id);
   const partnerSharedExpenses = sharedExpenses.filter((e) => e.user_id !== user?.id);
@@ -399,7 +397,14 @@ export default function DashboardPage() {
                     <tr key={mov.id}>
                       <td className="font-bold">
                         {mov.name || mov.title || mov.merchant || (mov.description?.length > 30 ? mov.description.substring(0, 30) + '...' : mov.description) || (isIncome ? 'Ingreso registrado' : 'Gasto registrado')}
-                        {view === 'personal' && mov.income_type === 'shared' && <span className="text-xs text-tertiary ml-sm">(Parte compartida)</span>}
+                        <div className="flex gap-sm mt-xs">
+                          <span className={`badge ${mov.income_type === 'personal' || mov.expense_type === 'personal' ? 'badge--personal' : 'badge--shared'}`} style={{ fontSize: '10px', padding: '2px 6px' }}>
+                            {(mov.income_type || mov.expense_type === 'personal' ? 'PERSONAL' : 'COMPARTIDO')}
+                          </span>
+                          {view === 'personal' && (mov.income_type === 'shared' || mov.expense_type === 'shared') && (
+                            <span className="text-xs text-tertiary">(Parte compartida)</span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <span className="cat-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
