@@ -16,6 +16,7 @@ const navItems = [
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
   const { user, isDemoMode, switchDemoUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <>
@@ -59,6 +60,21 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
         {/* User section */}
         <div className="sidebar__footer">
+          <div className="sidebar__theme-container mb-md">
+            <button 
+              className="sidebar__theme-toggle glass glass--hover" 
+              onClick={toggleTheme}
+              title={`Cambiar a modo ${theme === 'dark' ? 'claro' : 'oscuro'}`}
+            >
+              <span className="sidebar__link-icon">{theme === 'dark' ? '☀️' : '🌙'}</span>
+              {!collapsed && (
+                <span className="sidebar__link-label">
+                  Modo {theme === 'dark' ? 'Claro' : 'Oscuro'}
+                </span>
+              )}
+            </button>
+          </div>
+
           {isDemoMode && !collapsed && (
             <button className="sidebar__demo-switch" onClick={switchDemoUser} id="demo-switch-btn">
               🔄 Cambiar usuario demo

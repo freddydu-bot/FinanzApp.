@@ -15,7 +15,22 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import './DashboardPage.css';
+
+const containerVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5, staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1 }
+};
 
 const PIE_COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#0ea5e9'];
 
@@ -174,7 +189,12 @@ export default function DashboardPage() {
   }, [mySavingsRate, personalSemaphore.status, myPersonal.length, savingsGoals]);
 
   return (
-    <div className="dashboard-page animate-fadeIn">
+    <motion.div 
+      className="dashboard-page"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       <div className="page-header">
         <div className="flex justify-between items-start">
           <div>
@@ -199,6 +219,15 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ duration: 0.3 }}
+        >
 
       {/* ALERTS ROW (Recurrentes próximos) */}
       {upcomingPayments.length > 0 && (
@@ -446,7 +475,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 }
