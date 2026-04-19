@@ -36,10 +36,13 @@ export default function IncomesPage() {
 
   const currentIncomes = useMemo(() => {
     return incomes.filter(i => {
+      // PRIVACY RULE: Do not show partner's personal incomes
+      if (i.income_type === 'personal' && String(i.user_id) !== String(user?.id)) return false;
+
       const d = new Date(i.date + 'T12:00:00');
       return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
     });
-  }, [incomes, selectedMonth, selectedYear]);
+  }, [incomes, selectedMonth, selectedYear, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

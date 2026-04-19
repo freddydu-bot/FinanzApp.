@@ -39,10 +39,19 @@ const PIE_COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { partnership, partner, expenses, incomes, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading } = useData();
+  const { partnership, partner, expenses, incomes, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading, loadRealData } = useData();
   const [view, setView] = useState('personal');
   const [isExporting, setIsExporting] = useReactState(false);
+  const [isRefreshing, setIsRefreshing] = useReactState(false);
+  const [lastUpdated, setLastUpdated] = useReactState(() => new Date());
   const dashboardRef = useRef(null);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadRealData();
+    setLastUpdated(new Date());
+    setIsRefreshing(false);
+  };
 
   const handleExportPDF = async () => {
     if (!dashboardRef.current) return;
@@ -270,8 +279,11 @@ export default function DashboardPage() {
       <div className="page-header flex justify-between items-start flex-wrap gap-md">
         <div>
           <h1 className="page-header__title">Dashboard</h1>
-          <p className="page-header__subtitle">
-            Resumen de {getMonthName(selectedMonth)} {selectedYear}
+          <p className="page-header__subtitle flex items-center gap-sm">
+            <span>Resumen de {getMonthName(selectedMonth)} {selectedYear}</span>
+            <span style={{ fontSize: '11px', opacity: 0.6, background: 'var(--glass-bg)', padding: '2px 6px', borderRadius: '4px' }}>
+              Última act: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-md" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -290,13 +302,23 @@ export default function DashboardPage() {
             </button>
           </div>
           <button 
+            className="glass-btn flex items-center gap-sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            title="Sincronizar y actualizar datos manualmente"
+            style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '14px', height: 'fit-content', flexShrink: 0 }}
+          >
+            {isRefreshing ? <span className="animate-spin" style={{ display: 'inline-block' }}>🔄</span> : <span>🔁</span>}
+            <span className="hide-on-mobile">{isRefreshing ? 'Cargando...' : 'Actualizar'}</span>
+          </button>
+          <button 
             className="glass-btn glass-btn--primary flex items-center gap-sm"
             onClick={handleExportPDF}
             disabled={isExporting}
             title="Generar Reporte en PDF"
             style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '14px', height: 'fit-content', flexShrink: 0 }}
           >
-            {isExporting ? <span className="animate-spin">⏳</span> : <span>📄</span>}
+            {isExporting ? <span className="animate-spin" style={{ display: 'inline-block' }}>⏳</span> : <span>📄</span>}
             <span className="hide-on-mobile">{isExporting ? 'Generando...' : 'Exportar PDF'}</span>
           </button>
         </div>
