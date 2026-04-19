@@ -16,6 +16,9 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRef, useState as useReactState } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import './DashboardPage.css';
 
 const containerVariants = {
@@ -38,6 +41,34 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { partnership, partner, expenses, incomes, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading } = useData();
   const [view, setView] = useState('personal');
+  const [isExporting, setIsExporting] = useReactState(false);
+  const dashboardRef = useRef(null);
+
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(dashboardRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#0a0e21' : '#f4f7ff',
+        windowWidth: 1440,
+        logging: false
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`FinanzApp_${view === 'personal' ? 'Personal' : 'Compartido'}_${getMonthName(selectedMonth)}_${selectedYear}.pdf`);
+    } catch (error) {
+      console.error('Error generando PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -230,14 +261,14 @@ export default function DashboardPage() {
       initial="hidden"
       animate="visible"
     >
-      <div className="page-header">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="page-header__title">Dashboard</h1>
-            <p className="page-header__subtitle">
-              Resumen de {getMonthName(selectedMonth)} {selectedYear}
-            </p>
-          </div>
+      <div className="page-header flex justify-between items-start flex-wrap gap-md">
+        <div>
+          <h1 className="page-header__title">Dashboard</h1>
+          <p className="page-header__subtitle">
+            Resumen de {getMonthName(selectedMonth)} {selectedYear}
+          </p>
+        </div>
+        <div className="flex items-center gap-md">
           <div className="segmented-control glass">
             <button 
               className={`segmented-control__btn ${view === 'personal' ? 'active' : ''}`}
@@ -252,10 +283,21 @@ export default function DashboardPage() {
               Compartido
             </button>
           </div>
+          <button 
+            className="glass-btn glass-btn--primary flex items-center gap-sm"
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            title="Generar Reporte en PDF"
+            style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', justifySelf: 'flex-end', height: '100%', fontSize: 'var(--text-sm)' }}
+          >
+            {isExporting ? <span className="animate-spin">⏳</span> : <span>📄</span>}
+            <span className="hide-on-mobile">{isExporting ? 'Generando...' : 'Exportar PDF'}</span>
+          </button>
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
+      <div ref={dashboardRef} style={{ padding: 'var(--space-xs)' }}>
+        <AnimatePresence mode="wait">
         <motion.div
           key={view}
           initial={{ opacity: 0, x: 20 }}
@@ -528,7 +570,8 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }
