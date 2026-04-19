@@ -188,14 +188,17 @@ export default function DashboardPage() {
     
     let personalMessage = '';
     let personalStatus = 'success';
-    if (personalDiff < 0) {
+    if (myBudgetTotal === 0) {
+      personalStatus = 'warning';
+      personalMessage = `No has definido un presupuesto personal. Sin un límite, es difícil proyectar ahorros.`;
+    } else if (personalDiff < 0) {
       personalStatus = 'danger';
-      personalMessage = `A este ritmo, excederás tu presupuesto personal por ${formatCurrency(Math.abs(personalDiff))}. Te sugerimos frenar gastos de estilo de vida.`;
+      personalMessage = `A este ritmo, excederás tu límite presupuestal por ${formatCurrency(Math.abs(personalDiff))}. Te sugerimos frenar gastos prescindibles.`;
     } else if (personalDiff > myBudgetTotal * 0.2) {
-      personalMessage = `¡Excelente! Te proyectas para cerrar el mes con ${formatCurrency(personalDiff)} a favor. Considera mover este excedente a tus metas de ahorro.`;
+      personalMessage = `¡Excelente ritmo! Te proyectas para cerrar el mes usando ${formatCurrency(personalDiff)} menos de lo presupuestado. Considera invertir este margen.`;
     } else {
       personalStatus = 'warning';
-      personalMessage = `Vas justo al límite. Te sobrarán aprox. ${formatCurrency(personalDiff)}. Un gasto imprevisto podría sacarte de presupuesto.`;
+      personalMessage = `Vas justo al límite. Te sobrará un margen de aprox. ${formatCurrency(personalDiff)} en tu presupuesto. Un gasto imprevisto podría sobregirarte.`;
     }
 
     const dailyShared = sharedTotal / (currentDay || 1);
@@ -204,14 +207,17 @@ export default function DashboardPage() {
     
     let sharedMessage = '';
     let sharedStatus = 'success';
-    if (sharedDiff < 0) {
+    if (sharedBudgetTotal === 0) {
+      sharedStatus = 'warning';
+      sharedMessage = `No hay un presupuesto conjunto definido. Establezcan metas de gasto para habilitar las proyecciones conjuntas.`;
+    } else if (sharedDiff < 0) {
       sharedStatus = 'danger';
-      sharedMessage = `Atención pareja: La proyección conjunta indica un sobregiro de ${formatCurrency(Math.abs(sharedDiff))}. Revisen los gastos de la casa pronto.`;
+      sharedMessage = `Atención pareja: La proyección indica que romperán el presupuesto conjunto por ${formatCurrency(Math.abs(sharedDiff))}. Revisen sus aportes y gastos pronto.`;
     } else if (sharedDiff > sharedBudgetTotal * 0.15) {
-      sharedMessage = `La caja común va súper bien. Se proyecta un sobrante de ${formatCurrency(sharedDiff)} ideal para salidas o el fondo de emergencia conjunto.`;
+      sharedMessage = `Buen trabajo en equipo. Proyectan gastar ${formatCurrency(sharedDiff)} por debajo del límite acordado.`;
     } else {
       sharedStatus = 'warning';
-      sharedMessage = `El presupuesto compartido va medido. Quedarán ${formatCurrency(sharedDiff)} a este ritmo. Cuidado con los domicilios extra.`;
+      sharedMessage = `El presupuesto compartido va medido. Quedará un margen de apenas ${formatCurrency(sharedDiff)}. Tengan cuidado con gastos extra.`;
     }
 
     return {
@@ -268,8 +274,8 @@ export default function DashboardPage() {
             Resumen de {getMonthName(selectedMonth)} {selectedYear}
           </p>
         </div>
-        <div className="flex items-center gap-md">
-          <div className="segmented-control glass">
+        <div className="flex items-center gap-md" style={{ flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div className="segmented-control glass" style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
             <button 
               className={`segmented-control__btn ${view === 'personal' ? 'active' : ''}`}
               onClick={() => setView('personal')}
@@ -288,7 +294,7 @@ export default function DashboardPage() {
             onClick={handleExportPDF}
             disabled={isExporting}
             title="Generar Reporte en PDF"
-            style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', justifySelf: 'flex-end', height: '100%', fontSize: 'var(--text-sm)' }}
+            style={{ padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '14px', height: 'fit-content', flexShrink: 0 }}
           >
             {isExporting ? <span className="animate-spin">⏳</span> : <span>📄</span>}
             <span className="hide-on-mobile">{isExporting ? 'Generando...' : 'Exportar PDF'}</span>
