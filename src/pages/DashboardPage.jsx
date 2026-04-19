@@ -570,7 +570,9 @@ export default function DashboardPage() {
             </tbody>
           </table>
         </div>
-        </AnimatePresence>
+      </div>
+      </motion.div>
+      </AnimatePresence>
       </div>
     </motion.div>
   );
