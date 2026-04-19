@@ -143,16 +143,51 @@ export default function DashboardPage() {
   const myCategoryData = groupByCategory(myPersonal, categories);
   const sharedCategoryData = groupByCategory(sharedExpenses, categories);
 
-  // PROJECTION LOGIC (New suggested feature)
+  // PROJECTION LOGIC (AI Predictive Insights)
   const today = new Date();
   const isCurrentMonth = today.getMonth() + 1 === selectedMonth && today.getFullYear() === selectedYear;
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
   const currentDay = isCurrentMonth ? today.getDate() : daysInMonth;
+  const daysRemaining = daysInMonth - currentDay;
   
-  const dailyAverage = myPersonalTotal / currentDay;
-  const projectedPersonal = dailyAverage * daysInMonth;
-  const projectionDiff = projectedPersonal - myBudgetTotal;
-  const projectionStatus = projectedPersonal > myBudgetTotal ? 'danger' : 'success';
+  const aiInsights = useMemo(() => {
+    const dailyPersonal = myPersonalTotal / (currentDay || 1);
+    const projectedPersonal = dailyPersonal * daysInMonth;
+    const personalDiff = myBudgetTotal - projectedPersonal;
+    
+    let personalMessage = '';
+    let personalStatus = 'success';
+    if (personalDiff < 0) {
+      personalStatus = 'danger';
+      personalMessage = `A este ritmo, excederás tu presupuesto personal por ${formatCurrency(Math.abs(personalDiff))}. Te sugerimos frenar gastos de estilo de vida.`;
+    } else if (personalDiff > myBudgetTotal * 0.2) {
+      personalMessage = `¡Excelente! Te proyectas para cerrar el mes con ${formatCurrency(personalDiff)} a favor. Considera mover este excedente a tus metas de ahorro.`;
+    } else {
+      personalStatus = 'warning';
+      personalMessage = `Vas justo al límite. Te sobrarán aprox. ${formatCurrency(personalDiff)}. Un gasto imprevisto podría sacarte de presupuesto.`;
+    }
+
+    const dailyShared = sharedTotal / (currentDay || 1);
+    const projectedShared = dailyShared * daysInMonth;
+    const sharedDiff = sharedBudgetTotal - projectedShared;
+    
+    let sharedMessage = '';
+    let sharedStatus = 'success';
+    if (sharedDiff < 0) {
+      sharedStatus = 'danger';
+      sharedMessage = `Atención pareja: La proyección conjunta indica un sobregiro de ${formatCurrency(Math.abs(sharedDiff))}. Revisen los gastos de la casa pronto.`;
+    } else if (sharedDiff > sharedBudgetTotal * 0.15) {
+      sharedMessage = `La caja común va súper bien. Se proyecta un sobrante de ${formatCurrency(sharedDiff)} ideal para salidas o el fondo de emergencia conjunto.`;
+    } else {
+      sharedStatus = 'warning';
+      sharedMessage = `El presupuesto compartido va medido. Quedarán ${formatCurrency(sharedDiff)} a este ritmo. Cuidado con los domicilios extra.`;
+    }
+
+    return {
+      personal: { status: personalStatus, msg: personalMessage, projected: projectedPersonal },
+      shared: { status: sharedStatus, msg: sharedMessage, projected: projectedShared }
+    };
+  }, [myPersonalTotal, sharedTotal, myBudgetTotal, sharedBudgetTotal, currentDay, daysInMonth]);
 
   const renderSemaphore = (spent, budget, label) => {
     const sem = getSemaphoreStatus(spent, budget);
@@ -270,6 +305,24 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* AI PREDICTIVE INSIGHTS BANNER */}
+      <div className={`full-width glass glass--static mb-lg border--${view === 'personal' ? aiInsights.personal.status : aiInsights.shared.status} animate-fadeIn`} style={{ padding: 'var(--space-md)', background: `var(--color-${view === 'personal' ? aiInsights.personal.status : aiInsights.shared.status}-light)` }}>
+        <div className="flex items-start gap-md">
+          <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>🤖</div>
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-xs">
+              <h4 className="font-bold m-0" style={{ color: `var(--color-${view === 'personal' ? aiInsights.personal.status : aiInsights.shared.status})` }}>
+                Proyección de IA ({daysRemaining} días restantes)
+              </h4>
+               <span className="text-xs text-tertiary">Basado en tu ritmo actual</span>
+            </div>
+            <p className="text-sm m-0">
+              {view === 'personal' ? aiInsights.personal.msg : aiInsights.shared.msg}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="financial-summary-row mb-lg animate-fadeIn">
         <div className="summary-item glass" title="Saldo que traes del mes pasado">
           <span className="summary-item__label">Saldo Inicial</span>
@@ -316,15 +369,15 @@ export default function DashboardPage() {
               <span className="text-xs text-tertiary">Restante: {formatCurrency(myBudgetTotal - myPersonalTotal)}</span>
             </div>
 
-            <div className="stat-card glass glass--hover" style={{ borderLeft: `4px solid var(--color-${projectionStatus})` }}>
+            <div className="stat-card glass glass--hover" style={{ borderLeft: `4px solid var(--color-${aiInsights.personal.status})` }}>
               <span className="stat-card__label">Proyección al Cierre</span>
-              <span className="stat-card__value" style={{ color: `var(--color-${projectionStatus})` }}>
-                {formatCurrency(projectedPersonal)}
+              <span className="stat-card__value" style={{ color: `var(--color-${aiInsights.personal.status})` }}>
+                {formatCurrency(aiInsights.personal.projected)}
               </span>
               <span className="text-xs text-tertiary">
-                {projectionDiff > 0 
-                  ? `Excederás ${formatCurrency(projectionDiff)}` 
-                  : `Ahorro proyectado: ${formatCurrency(Math.abs(projectionDiff))}`}
+                {myBudgetTotal - aiInsights.personal.projected < 0 
+                  ? `Excederás ${formatCurrency(Math.abs(myBudgetTotal - aiInsights.personal.projected))}` 
+                  : `Ahorro proyectado: ${formatCurrency(myBudgetTotal - aiInsights.personal.projected)}`}
               </span>
             </div>
 
