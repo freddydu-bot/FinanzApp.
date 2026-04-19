@@ -354,18 +354,36 @@ export default function DashboardPage() {
               <h3 className="section-title">⚖️ Equilibrio de Gastos Compartidos</h3>
               <div className="contribution-container" style={{ padding: 'var(--space-md)' }}>
                 <div className="contribution-header flex justify-between text-xs mb-sm">
-                  <span>Aporte Real: {user?.display_name?.split(' ')[0]} ({formatPercent(contribution.user1Pct, 0)})</span>
-                  <span>Meta: {mySplit}%</span>
-                </div>
-                <div className="contribution-track" style={{ height: '12px', background: 'var(--bg-input)', borderRadius: 'var(--radius-full)', position: 'relative' }}>
-                  <div className="contribution-fill" style={{ width: `${contribution.user1Pct}%`, background: 'var(--accent-primary)', height: '100%', borderRadius: 'var(--radius-full)' }} />
-                  <div className="contribution-marker" style={{ left: `${mySplit}%`, position: 'absolute', top: '-4px', bottom: '-4px', width: '3px', background: 'var(--color-danger)', borderRadius: '2px' }} />
-                </div>
-                {contribution.difference > 5 && (
-                  <div className="mt-md p-sm glass text-xs text-center border--warning" style={{ color: 'var(--color-warning)' }}>
-                    {contribution.dominantUser === 'user1' ? user?.display_name : partner?.display_name} aporta un {formatPercent(contribution.difference, 0)} más de lo pactado.
+                  <div className="flex flex-col">
+                    <span className="font-bold">{user?.display_name?.split(' ')[0]}</span>
+                    <span className="text-success">{formatCurrency(mySharedTotal)} ({formatPercent(contribution.user1Pct, 0)})</span>
                   </div>
-                )}
+                  <div className="flex flex-col text-right">
+                    <span className="text-tertiary">Meta Pactada</span>
+                    <span className="font-bold">{mySplit}%</span>
+                  </div>
+                  <div className="flex flex-col text-right">
+                    <span className="font-bold">{partner?.display_name?.split(' ')[0] || 'Partner'}</span>
+                    <span className="text-primary">{formatCurrency(partnerSharedTotal)} ({formatPercent(contribution.user2Pct, 0)})</span>
+                  </div>
+                </div>
+                <div className="contribution-track" style={{ height: '14px', background: 'var(--bg-input)', borderRadius: 'var(--radius-full)', position: 'relative', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="contribution-fill" style={{ width: `${contribution.user1Pct}%`, background: 'linear-gradient(90deg, var(--color-success) 0%, var(--accent-primary) 100%)', height: '100%' }} />
+                  <div className="contribution-marker" style={{ left: `${mySplit}%`, position: 'absolute', top: '0', bottom: '0', width: '2px', background: 'var(--color-danger)', boxShadow: '0 0 10px var(--color-danger)', zIndex: 10 }} />
+                </div>
+                <div className="mt-md p-md glass border--warning text-xs flex items-center gap-md">
+                   <span style={{ fontSize: '24px' }}>⚖️</span>
+                   <div>
+                    <p className="font-bold" style={{ color: 'var(--color-warning)' }}>
+                      Diferencia actual: {formatCurrency(Math.abs(mySharedTotal - ((sharedTotal * mySplit) / 100)))}
+                    </p>
+                    <p className="text-tertiary">
+                      {contribution.difference > 5 
+                        ? `${contribution.dominantUser === 'user1' ? user?.display_name : partner?.display_name} ha aportado más de lo acordado este mes.` 
+                        : 'El equilibrio de aportes está dentro del rango pactado. ¡Excelente coordinación!'}
+                    </p>
+                   </div>
+                </div>
               </div>
             </div>
           </>
