@@ -117,33 +117,36 @@ export default function SettingsPage() {
 
         {/* Partnership & Split */}
         <div className="glass glass--static" style={{ padding: 'var(--space-xl)' }}>
-          <h3 className="section-title">👥 Vínculo con Tatiana</h3>
+          <h3 className="section-title">👥 Vínculo con tu Pareja</h3>
           <div style={{ marginTop: 'var(--space-md)' }}>
             {!partnership ? (
               <div className="link-partner-form">
-                <p className="text-sm text-secondary mb-md">Vincula a Tatiana para compartir presupuestos y ahorros.</p>
+                <p className="text-sm text-secondary mb-md">Vincula a tu pareja para compartir el presupuesto de la casa e iniciar proyecciones conjuntas.</p>
                 <div className="form-group">
                   <input 
                     type="email" 
                     className="glass-input" 
-                    placeholder="tatygaviria@gmail.com" 
+                    placeholder="correo.pareja@ejemplo.com" 
                     id="partner-email-input"
-                    defaultValue="tatygaviria@gmail.com"
                   />
                   <button 
                     className="btn btn--secondary btn--sm" 
                     style={{ marginTop: '1rem' }}
                     onClick={async () => {
-                      const email = document.getElementById('partner-email-input').value;
+                      const emailInputValue = document.getElementById('partner-email-input').value;
+                      if (!emailInputValue) {
+                        toast.error('Por favor ingresa un correo válido.');
+                        return;
+                      }
                       try {
-                        await createPartnership(email);
-                        toast.success('¡Tatiana vinculada con éxito! ❤️');
+                        await createPartnership(emailInputValue);
+                        toast.success('¡Pareja vinculada con éxito! ❤️');
                       } catch (e) {
                         toast.error(e.message);
                       }
                     }}
                   >
-                    💖 Vincular Tatiana Gaviria
+                    💖 Vincular Pareja
                   </button>
                 </div>
               </div>
@@ -151,11 +154,11 @@ export default function SettingsPage() {
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--color-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
-                    {partner?.display_name?.charAt(0) || 'T'}
+                    {partner?.display_name?.charAt(0) || 'P'}
                   </div>
                   <div>
-                    <p className="font-bold">{partner?.display_name || 'Tatiana Gaviria'}</p>
-                    <p className="text-xs text-secondary">{partner?.email || 'tatygaviria@gmail.com'}</p>
+                    <p className="font-bold">{partner?.display_name || 'Pareja (Cargando...)'}</p>
+                    <p className="text-xs text-secondary">{partner?.email || ''}</p>
                   </div>
                   <div className="glass-tag glass-tag--success" style={{ marginLeft: 'auto' }}>Conectados</div>
                 </div>
@@ -165,7 +168,7 @@ export default function SettingsPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                     <span className="text-sm font-semibold" style={{ minWidth: '80px' }}>{user?.display_name}: {mySplit}%</span>
                     <input type="range" min="0" max="100" value={splitValue} onChange={(e) => setSplitValue(Number(e.target.value))} style={{ flex: 1, cursor: 'pointer' }} />
-                    <span className="text-sm font-semibold" style={{ minWidth: '80px', textAlign: 'right' }}>Tatiana: {partnerSplit}%</span>
+                    <span className="text-sm font-semibold" style={{ minWidth: '80px', textAlign: 'right' }}>Pareja: {partnerSplit}%</span>
                   </div>
                   <button className="btn btn--primary btn--sm" onClick={handleSaveSplit} style={{ marginTop: 'var(--space-sm)' }}>
                     💾 Guardar Distribución
