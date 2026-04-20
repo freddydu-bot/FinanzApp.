@@ -13,7 +13,13 @@
   z-index: var(--z-sidebar);
   transition: width var(--transition-spring), padding var(--transition-default);
   padding: var(--space-lg);
-  overflow: hidden;
+  overflow-y: auto; /* Fix: allow scrolling on small devices */
+  overflow-x: hidden;
+  /* Scrollbar hiding for cleaner UI */
+  scrollbar-width: none; 
+}
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .sidebar--collapsed {
@@ -210,6 +216,12 @@
 }
 
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
-  .sidebar--mobile-open { transform: translateX(0); width: var(--sidebar-width); }
+  .sidebar { 
+    transform: translateX(-100%); 
+    z-index: 9999;
+    background: var(--bg-main) !important; /* solid background to prevent bleeding */
+    backdrop-filter: none !important;
+    box-shadow: var(--shadow-xl);
+  }
+  .sidebar--mobile-open { transform: translateX(0); width: 280px; }
 }
