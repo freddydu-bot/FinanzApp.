@@ -184,7 +184,7 @@ export default function DashboardPage() {
   const daysRemaining = daysInMonth - currentDay;
   
   const aiInsights = useMemo(() => {
-    const dailyPersonal = myPersonalTotal / (currentDay || 1);
+    const dailyPersonal = myLoad / (currentDay || 1);
     const projectedPersonal = dailyPersonal * daysInMonth;
     const personalDiff = myBudgetTotal - projectedPersonal;
     
@@ -420,7 +420,7 @@ export default function DashboardPage() {
             {/* PERSONAL CARDS */}
             <div className="stat-card glass glass--hover">
               <span className="stat-card__label">Gastos del Mes</span>
-              <span className="stat-card__value">{formatCurrency(myPersonalTotal)}</span>
+              <span className="stat-card__value">{formatCurrency(myLoad)}</span>
               <div className={`glass-tag glass-tag--${personalSemaphore.status === 'green' ? 'success' : personalSemaphore.status === 'orange' ? 'warning' : 'danger'}`}>
                 {personalSemaphore.label}
               </div>
