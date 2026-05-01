@@ -15,6 +15,7 @@ export default function IncomesPage() {
   } = useData();
   const toast = useToast();
 
+  const [view, setView] = useState('personal');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
@@ -24,15 +25,38 @@ export default function IncomesPage() {
     income_type: 'personal',
   });
 
-  const summary = useMemo(() => {
-    // We pass ALL incomes and expenses to calculate the cumulative dragging
-    return calculateFinancialSummary(incomes, expenses, selectedMonth, selectedYear, user?.id);
-  }, [incomes, expenses, selectedMonth, selectedYear, user]);
-
   const splitPct = partnership?.user1_split_pct || 50;
   const mySplit = user?.id === partnership?.user1_id ? splitPct : 100 - splitPct;
-  const myIncomeTotal = summary.personalIncomesTotal + (summary.sharedIncomesTotal * (mySplit / 100));
-  const jointIncomeTotal = summary.sharedIncomesTotal;
+
+  const personalSummary = useMemo(() => {
+    const personalIncomes = incomes.filter(i => i.income_type === 'personal' && String(i.user_id) === String(user?.id));
+    const sharedIncomesPart = incomes.filter(i => i.income_type === 'shared').map(i => ({
+      ...i,
+      amount: Number(i.amount) * (mySplit / 100)
+    }));
+    const personalExpenses = expenses.filter(e => e.expense_type === 'personal' && String(e.user_id) === String(user?.id));
+    const sharedExpensesPart = expenses.filter(e => e.expense_type === 'shared').map(e => ({
+      ...e,
+      amount: Number(e.amount) * (mySplit / 100)
+    }));
+
+    return calculateFinancialSummary(
+      [...personalIncomes, ...sharedIncomesPart], 
+      [...personalExpenses, ...sharedExpensesPart], 
+      selectedMonth, selectedYear, user?.id
+    );
+  }, [incomes, expenses, selectedMonth, selectedYear, user, mySplit]);
+
+  const sharedSummary = useMemo(() => {
+    const sharedIncomes = incomes.filter(i => i.income_type === 'shared');
+    const sharedExpenses = expenses.filter(e => e.expense_type === 'shared');
+    return calculateFinancialSummary(sharedIncomes, sharedExpenses, selectedMonth, selectedYear, user?.id);
+  }, [incomes, expenses, selectedMonth, selectedYear, user]);
+
+  const summary = view === 'personal' ? personalSummary : sharedSummary;
+
+  const myIncomeTotal = personalSummary.personalIncomesTotal + (personalSummary.sharedIncomesTotal * (mySplit / 100));
+  const jointIncomeTotal = sharedSummary.totalIncomes;
 
   const currentIncomes = useMemo(() => {
     return incomes.filter(i => {
@@ -97,9 +121,26 @@ export default function IncomesPage() {
 
   return (
     <div className="incomes-page">
-      <div className="page-header">
-        <h1 className="page-header__title">💰 Gestión de Ingresos</h1>
-        <p className="page-header__subtitle">Control acumulativo de liquidez</p>
+      <div className="page-header flex justify-between items-center flex-wrap gap-md">
+        <div>
+          <h1 className="page-header__title">💰 Gestión de Ingresos</h1>
+          <p className="page-header__subtitle">Control acumulativo de liquidez</p>
+        </div>
+        
+        <div className="segmented-control glass">
+          <button 
+            className={`segmented-control__btn ${view === 'personal' ? 'active' : ''}`}
+            onClick={() => setView('personal')}
+          >
+            Personal
+          </button>
+          <button 
+            className={`segmented-control__btn ${view === 'shared' ? 'active' : ''}`}
+            onClick={() => setView('shared')}
+          >
+            Pareja
+          </button>
+        </div>
       </div>
 
       {/* FINANCIAL SUMMARY (Points 2, 3, 5) */}
@@ -109,33 +150,35 @@ export default function IncomesPage() {
           <span className={`summary-card__value ${summary.initialBalance >= 0 ? 'text-success' : 'text-danger'}`}>
              {formatCurrency(summary.initialBalance)}
           </span>
-          <span className="summary-card__desc">Del periodo anterior</span>
+          <span className="summary-card__desc">Del periodo anterior ({view === 'personal' ? 'Mío' : 'Pareja'})</span>
         </div>
         <div className="summary-card glass">
-          <span className="summary-card__label">Mis Ingresos</span>
-          <span className="summary-card__value text-primary">{formatCurrency(myIncomeTotal)}</span>
+          <span className="summary-card__label">{view === 'personal' ? 'Mis Ingresos' : 'Ingresos Totales'}</span>
+          <span className="summary-card__value text-primary">{formatCurrency(view === 'personal' ? myIncomeTotal : jointIncomeTotal)}</span>
           <span className="summary-card__desc">
-            Personal: {formatCurrency(summary.personalIncomesTotal)} + Parte Conjunta
+            {view === 'personal' 
+              ? `Personal: ${formatCurrency(personalSummary.personalIncomesTotal)} + Parte Conjunta`
+              : 'Suma de ingresos compartidos'}
           </span>
         </div>
         <div className="summary-card glass">
           <span className="summary-card__label">Ingresos Conjuntos</span>
           <span className="summary-card__value text-info" style={{ color: 'var(--accent-secondary)' }}>
-            {formatCurrency(jointIncomeTotal)}
+            {formatCurrency(sharedSummary.totalIncomes)}
           </span>
-          <span className="summary-card__desc">Total en la pareja</span>
+          <span className="summary-card__desc">Total en el fondo común</span>
         </div>
         <div className="summary-card glass">
           <span className="summary-card__label">Gastos del Mes</span>
           <span className="summary-card__value text-warning">{formatCurrency(summary.totalExpenses)}</span>
-          <span className="summary-card__desc">Período actual</span>
+          <span className="summary-card__desc">Carga {view === 'personal' ? 'personal' : 'conjunta'}</span>
         </div>
         <div className="summary-card glass highlight">
           <span className="summary-card__label">Saldo Final</span>
           <span className={`summary-card__value ${summary.finalBalance >= 0 ? 'text-success' : 'text-danger'}`}>
             {formatCurrency(summary.finalBalance)}
           </span>
-          <span className="summary-card__desc">Disponible para el próximo mes</span>
+          <span className="summary-card__desc">Disponible para {view === 'personal' ? 'mí' : 'nosotros'}</span>
         </div>
       </div>
 
