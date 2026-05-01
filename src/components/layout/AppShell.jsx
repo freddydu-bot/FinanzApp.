@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import ToastContainer from '../common/Toast';
+import SmartInput from '../common/SmartInput';
 import './AppShell.css';
 
 export default function AppShell({ children }) {
@@ -30,6 +31,7 @@ export default function AppShell({ children }) {
         </main>
       </div>
       <ToastContainer />
+      <SmartInput />
     </div>
   );
 }
