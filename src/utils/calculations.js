@@ -155,16 +155,19 @@ export function calculateFinancialSummary(incomes, expenses, month, year, curren
   };
 
   // PRIVACY LOGIC: Filter data for calculations
-  // Personal incomes are only for the owner. Shared are for everyone.
-  const myTotalIncomes = incomes.filter(i => isCurrent(i));
-  const myTotalExpenses = expenses.filter(e => isCurrent(e));
+  // Only count my personal records OR shared records. NEVER partner's personal records.
+  const filteredIncomes = incomes.filter(i => i.income_type === 'shared' || String(i.user_id) === String(currentUserId));
+  const filteredExpenses = expenses.filter(e => e.expense_type === 'shared' || String(e.user_id) === String(currentUserId));
+
+  const myTotalIncomes = filteredIncomes.filter(i => isCurrent(i));
+  const myTotalExpenses = filteredExpenses.filter(e => isCurrent(e));
 
   const totalIncomes = myTotalIncomes.reduce((s, i) => s + Number(i.amount), 0);
   const totalExpenses = myTotalExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
   // Dragged balance from all time before current period
-  const previousIncomes = incomes.filter(i => isPrevious(i)).reduce((s, i) => s + Number(i.amount), 0);
-  const previousExpenses = expenses.filter(e => isPrevious(e)).reduce((s, e) => s + Number(e.amount), 0);
+  const previousIncomes = filteredIncomes.filter(i => isPrevious(i)).reduce((s, i) => s + Number(i.amount), 0);
+  const previousExpenses = filteredExpenses.filter(e => isPrevious(e)).reduce((s, e) => s + Number(e.amount), 0);
 
   const initialBalance = previousIncomes - previousExpenses;
   const finalBalance = initialBalance + totalIncomes - totalExpenses;
