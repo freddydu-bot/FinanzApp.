@@ -108,19 +108,12 @@ export default function DashboardPage() {
 
   // Financial summaries for different views
   const personalSummary = useMemo(() => {
-    const personalIncomes = incomes.filter(i => i.income_type === 'personal' && i.user_id === user?.id);
-    const sharedIncomesPart = incomes.filter(i => i.income_type === 'shared').map(i => ({
-      ...i,
-      amount: Number(i.amount) * (mySplit / 100)
-    }));
-    const personalExpenses = expenses.filter(e => e.expense_type === 'personal' && e.user_id === user?.id);
-    const sharedExpensesPart = expenses.filter(e => e.expense_type === 'shared').map(e => ({
-      ...e,
-      amount: Number(e.amount) * (mySplit / 100)
-    }));
+    // CASH FLOW LOGIC: Only what I actually received or paid
+    const myIncomes = incomes.filter(i => String(i.user_id) === String(user?.id));
+    const myExpenses = expenses.filter(e => String(e.user_id) === String(user?.id));
 
-    return calculateFinancialSummary([...personalIncomes, ...sharedIncomesPart], [...personalExpenses, ...sharedExpensesPart], selectedMonth, selectedYear, user?.id);
-  }, [incomes, expenses, selectedMonth, selectedYear, user, mySplit]);
+    return calculateFinancialSummary(myIncomes, myExpenses, selectedMonth, selectedYear, user?.id);
+  }, [incomes, expenses, selectedMonth, selectedYear, user]);
 
   const sharedSummary = useMemo(() => {
     const sharedIncomes = incomes.filter(i => i.income_type === 'shared');
