@@ -117,7 +117,9 @@ export default function SmartInput() {
       }
     } catch (err) {
       console.error('Error procesando texto:', err);
-      toast.error('Error procesando tu petición. Intenta de nuevo.');
+      // Extraemos el mensaje real del error si viene del servidor
+      const serverMsg = err?.context?.error || err.message || 'Intenta de nuevo';
+      toast.error(`Error de IA: ${serverMsg}`);
     } finally {
       setIsProcessing(false);
       setIsRecording(false);
