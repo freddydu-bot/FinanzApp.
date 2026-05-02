@@ -15,10 +15,13 @@ export default function SmartInput() {
   const [isOpen, setIsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [text, setText] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [parsedData, setParsedData] = useState(null);
   
   const recognitionRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -95,18 +98,55 @@ export default function SmartInput() {
     }
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('La imagen no puede pesar más de 5MB');
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result);
+      reader.readAsDataURL(file);
+      haptic.light();
+    }
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    haptic.light();
+  };
+
   const handleAnalyze = async (inputText) => {
     const textToProcess = inputText || text;
-    if (!textToProcess.trim()) {
-      toast.warning('No se detectó texto para procesar');
+    if (!textToProcess.trim() && !imageFile) {
+      toast.warning('Ingresa texto o sube una imagen');
       return;
     }
 
     setIsProcessing(true);
     try {
+      let imageBase64 = null;
+      let mimeType = null;
+      
+      if (imageFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(imageFile);
+        });
+        const result = await base64Promise;
+        const parts = result.split(',');
+        mimeType = parts[0].split(':')[1].split(';')[0];
+        imageBase64 = parts[1];
+      }
+
       const categoryNames = categories.map(c => c.name);
       const { data, error } = await supabase.functions.invoke('process-transaction', {
-        body: { text: textToProcess, categories: categoryNames }
+        body: { text: textToProcess, imageBase64, mimeType, categories: categoryNames }
       });
 
       if (error) throw error;
@@ -162,6 +202,7 @@ export default function SmartInput() {
       setParsedData(null);
       setIsOpen(false);
       setText('');
+      clearImage();
     } catch (error) {
       console.error(error);
       toast.error('Error al guardar el registro');
@@ -185,7 +226,7 @@ export default function SmartInput() {
                 <h3 className="font-bold text-primary m-0 flex items-center gap-sm">
                   <span>🤖</span> Registro Inteligente
                 </h3>
-                <button onClick={() => { setIsOpen(false); setText(''); if(isRecording) recognitionRef.current?.stop(); }} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+                <button onClick={() => { setIsOpen(false); setText(''); clearImage(); if(isRecording) recognitionRef.current?.stop(); }} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
               </div>
               
               <textarea 
@@ -198,20 +239,48 @@ export default function SmartInput() {
                 style={{ resize: 'none' }}
               />
 
+              {imagePreview && (
+                <div style={{ position: 'relative', marginBottom: '1rem', borderRadius: '8px', overflow: 'hidden', height: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <img src={imagePreview} alt="Receipt preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button 
+                    onClick={clearImage}
+                    style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '24px', height: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}
+                  >×</button>
+                </div>
+              )}
+
+              <input 
+                type="file" 
+                accept="image/*" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                onChange={handleImageUpload} 
+              />
+
               <div className="flex gap-sm">
                 <button 
                   className={`btn ${isRecording ? 'btn--danger animate-pulse' : 'btn--secondary'} flex-1`}
                   onClick={toggleRecording}
                   disabled={isProcessing}
+                  style={{ padding: '0.5rem' }}
                 >
-                  {isRecording ? '🛑 Detener' : '🎤 Hablar'}
+                  {isRecording ? '🛑' : '🎤'} Voz
+                </button>
+                <button 
+                  className="btn btn--secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessing}
+                  title="Subir foto de recibo"
+                  style={{ width: '40px', padding: '0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                >
+                  📸
                 </button>
                 <button 
                   className="btn btn--primary flex-1"
                   onClick={() => handleAnalyze(text)}
-                  disabled={isProcessing || !text.trim()}
+                  disabled={isProcessing || (!text.trim() && !imageFile)}
                 >
-                  {isProcessing ? '⏳ Procesando' : '✨ Analizar'}
+                  {isProcessing ? '⏳' : '✨'} Analizar
                 </button>
               </div>
             </motion.div>

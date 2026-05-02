@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, categories } = await req.json()
+    const { text, imageBase64, mimeType, categories } = await req.json()
     
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
@@ -21,24 +21,17 @@ serve(async (req) => {
     }
 
     const systemPrompt = `
-Eres un asistente financiero avanzado. Tu tarea es extraer la información de la transacción proporcionada por el usuario y devolver UNICAMENTE un objeto JSON válido, sin formato markdown ni texto adicional.
+Eres un asistente financiero avanzado con visión. Tu tarea es extraer la información de la transacción proporcionada por el usuario (ya sea por voz, texto o imagen de un recibo/factura) y devolver UNICAMENTE un objeto JSON válido, sin formato markdown ni texto adicional.
 
 REGLAS DE INTERPRETACION:
-1. Detectar si es "ingreso" o "gasto".
-2. Extraer el valor numérico sin símbolos (ej: "45 mil" -> 45000, "2 millones" -> 2000000, "lucas" -> miles, "palos" -> millones). Si el valor es cero o nulo, pon 0.
-3. Identificar categoría SOLO de esta lista dinámica proporcionada por la base de datos: [${categories.join(", ")}]. Si no coincide claramente, usa "Otros" o la categoría más parecida.
-4. Extraer comercio o fuente (si no se menciona: "no especificado"). Si ya existe un comercio similar, estandarizarlo (ej: "uber", "exito").
-5. Clasificar el subtipo (cost_type) como:
-   - "fixed" (gastos fijos recurrentes: arriendo, suscripciones, servicios)
-   - "variable" (gastos ocasionales)
-   - "na" (para ingresos)
-6. Detectar fecha:
-   - "hoy" = fecha actual (${new Date().toISOString().split('T')[0]})
-   - "ayer" = fecha de ayer
-   - "mañana" = fecha de mañana
-   - sin fecha clara = fecha actual
-7. Generar descripción corta y clara.
-8. Priorizar coherencia financiera sobre literalidad (ej. corregir errores del reconocimiento de voz por contexto).
+1. Detectar si es "ingreso" o "gasto" (las facturas o recibos de compra son gastos por defecto).
+2. Extraer el valor numérico (total) sin símbolos (ej: "45 mil" -> 45000). Si el valor es cero o nulo, pon 0. Si hay propina en la factura, suma la propina al total.
+3. Identificar categoría SOLO de esta lista dinámica: [${categories.join(", ")}].
+4. Extraer comercio o fuente. Si lees el logo de un comercio en la imagen, úsalo (ej: "Carulla", "Uber"). Si no, pon "no especificado".
+5. Clasificar el subtipo (cost_type): "fixed", "variable", o "na" (para ingresos).
+6. Detectar fecha: Si la imagen tiene una fecha, usa esa en formato YYYY-MM-DD. Si es por texto: "hoy"=${new Date().toISOString().split('T')[0]}.
+7. Generar descripción corta y clara de lo comprado.
+8. Si hay imagen Y texto, usa la imagen para los montos y el comercio, y el texto para contexto adicional.
 
 FORMATO DE SALIDA OBLIGATORIO (JSON estricto):
 {
@@ -51,6 +44,19 @@ FORMATO DE SALIDA OBLIGATORIO (JSON estricto):
   "description": "string"
 }
 `
+    const parts: any[] = [
+      { text: systemPrompt },
+      { text: text ? `Transacción a analizar: "${text}"` : "Por favor analiza la imagen adjunta." }
+    ]
+
+    if (imageBase64 && mimeType) {
+      parts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: imageBase64
+        }
+      })
+    }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
@@ -61,10 +67,7 @@ FORMATO DE SALIDA OBLIGATORIO (JSON estricto):
         contents: [
           {
             role: "user",
-            parts: [
-              { text: systemPrompt },
-              { text: `Transacción a analizar: "${text}"` }
-            ]
+            parts: parts
           }
         ],
         generationConfig: {
