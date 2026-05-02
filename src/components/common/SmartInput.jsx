@@ -36,9 +36,13 @@ export default function SmartInput() {
       };
 
       recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        if (event.error !== 'no-speech') {
-          toast.error('Error con el micrófono. Intenta escribir el texto.');
+        console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          toast.error('Permiso de micrófono denegado. Haz clic en el ícono del candado en la barra de direcciones para permitirlo.');
+        } else if (event.error === 'network') {
+          toast.error('Error de red. El reconocimiento de voz necesita internet.');
+        } else if (event.error !== 'no-speech') {
+          toast.error(`Error de micrófono (${event.error}). Intenta escribir.`);
         }
         setIsRecording(false);
       };
