@@ -14,6 +14,7 @@ import CategoriesPage from './pages/CategoriesPage';
 import RecurringPage from './pages/RecurringPage';
 import SavingsPage from './pages/SavingsPage';
 import SettingsPage from './pages/SettingsPage';
+import CopilotPage from './pages/CopilotPage';
 
 function ProtectedLoader({ children }) {
   const { loading: dataLoading } = useData();
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/recurring" element={<ProtectedRoute><RecurringPage /></ProtectedRoute>} />
       <Route path="/savings" element={<ProtectedRoute><SavingsPage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+      <Route path="/copilot" element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

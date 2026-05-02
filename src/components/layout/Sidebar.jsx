@@ -9,6 +9,7 @@ const navItems = [
   { path: '/expenses', icon: '💳', label: 'Gastos', id: 'nav-expenses' },
   { path: '/budgets', icon: '🎯', label: 'Presupuestos', id: 'nav-budgets' },
   { path: '/analytics', icon: '📈', label: 'Analítica', id: 'nav-analytics' },
+  { path: '/copilot', icon: '🤖', label: 'Copiloto IA', id: 'nav-copilot' },
   { path: '/categories', icon: '🏷️', label: 'Categorías', id: 'nav-categories' },
   { path: '/recurring', icon: '🔄', label: 'Recurrentes', id: 'nav-recurring' },
   { path: '/savings', icon: '📈', label: 'Ahorro e Inversión', id: 'nav-savings' },
