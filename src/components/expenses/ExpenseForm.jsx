@@ -38,7 +38,7 @@ export default function ExpenseForm({ expense, onClose }) {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     try {
       e.preventDefault();
 
