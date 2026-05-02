@@ -11,78 +11,105 @@ serve(async (req) => {
   }
 
   try {
-    const { expenses, incomes, categories, currentMonth, currentYear, userName } = await req.json()
+    const body = await req.json()
+    const expenses = body.expenses || []
+    const incomes = body.incomes || []
+    const currentMonth = body.currentMonth
+    const currentYear = body.currentYear
+    const userName = body.userName || 'Usuario'
+
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
     if (!GEMINI_API_KEY) throw new Error('Missing GEMINI_API_KEY')
 
-    // Build financial context
-    const totalExpenses = expenses.reduce((s: number, e: any) => s + Number(e.amount), 0)
-    const totalIncomes = incomes.reduce((s: number, i: any) => s + Number(i.amount), 0)
+    // Totals
+    let totalExpenses = 0
+    for (const e of expenses) totalExpenses += Number(e.amount || 0)
+
+    let totalIncomes = 0
+    for (const i of incomes) totalIncomes += Number(i.amount || 0)
+
     const balance = totalIncomes - totalExpenses
-    const savingsRate = totalIncomes > 0 ? ((totalIncomes - totalExpenses) / totalIncomes * 100).toFixed(1) : 0
+    const savingsRate = totalIncomes > 0
+      ? ((totalIncomes - totalExpenses) / totalIncomes * 100).toFixed(1)
+      : '0.0'
 
-    // Group expenses by category
-    const byCategory: Record<string, number> = {}
+    // Group by category
+    const byCategory = {}
     for (const e of expenses) {
-      const cat = e.categories?.name || e.category_id || 'Sin categoría'
-      byCategory[cat] = (byCategory[cat] || 0) + Number(e.amount)
+      const cat = (e.categories && e.categories.name) ? e.categories.name : 'Sin categoría'
+      byCategory[cat] = (byCategory[cat] || 0) + Number(e.amount || 0)
     }
+
     const topCategories = Object.entries(byCategory)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
       .slice(0, 8)
-      .map(([name, amount]) => ({ name, amount, pct: totalExpenses > 0 ? ((amount/totalExpenses)*100).toFixed(1) : 0 }))
+      .map(([name, amount]) => ({
+        name,
+        amount: Number(amount),
+        pct: totalExpenses > 0 ? ((Number(amount) / totalExpenses) * 100).toFixed(1) : '0'
+      }))
 
-    // Expense pattern by day
-    const byDay: Record<string, number> = {}
+    // Peak day
+    const byDay = {}
     for (const e of expenses) {
-      const day = new Date(e.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long' })
-      byDay[day] = (byDay[day] || 0) + Number(e.amount)
+      const d = new Date(e.date + 'T12:00:00')
+      const day = d.toLocaleDateString('es-CO', { weekday: 'long' })
+      byDay[day] = (byDay[day] || 0) + Number(e.amount || 0)
     }
-    const peakDay = Object.entries(byDay).sort((a,b) => b[1]-a[1])[0]?.[0] || 'N/A'
+    const dayEntries = Object.entries(byDay).sort((a, b) => Number(b[1]) - Number(a[1]))
+    const peakDay = dayEntries.length > 0 ? dayEntries[0][0] : 'N/A'
 
     // Fixed vs variable
-    const fixedTotal = expenses.filter((e: any) => e.cost_type === 'fixed').reduce((s: number, e: any) => s + Number(e.amount), 0)
-    const variableTotal = expenses.filter((e: any) => e.cost_type === 'variable').reduce((s: number, e: any) => s + Number(e.amount), 0)
+    let fixedTotal = 0
+    let variableTotal = 0
+    for (const e of expenses) {
+      if (e.cost_type === 'fixed') fixedTotal += Number(e.amount || 0)
+      else variableTotal += Number(e.amount || 0)
+    }
+
+    const fmt = (n) => `$${Number(n).toLocaleString('es-CO')} COP`
 
     const systemPrompt = `
-Eres un Copiloto Financiero Personal de alto nivel, experto en finanzas personales colombianas.
-Analiza los datos financieros del usuario y genera un informe de insights accionables, concisos y personalizados.
-El usuario se llama: ${userName || 'Usuario'}.
-Fecha de análisis: ${currentMonth}/${currentYear}.
-Responde ÚNICAMENTE con un JSON válido sin markdown.
+Eres un Copiloto Financiero Personal experto en finanzas personales colombianas.
+Analiza los datos financieros y genera un reporte JSON con insights accionables y personalizados.
+El usuario se llama: ${userName}.
+Mes analizado: ${currentMonth}/${currentYear}.
+Responde ÚNICAMENTE con un JSON válido sin markdown ni texto adicional.
 
 DATOS FINANCIEROS:
-- Ingresos del mes: $${totalIncomes.toLocaleString('es-CO')} COP
-- Gastos del mes: $${totalExpenses.toLocaleString('es-CO')} COP
-- Balance neto: $${balance.toLocaleString('es-CO')} COP
+- Ingresos del mes: ${fmt(totalIncomes)}
+- Gastos del mes: ${fmt(totalExpenses)}
+- Balance neto: ${fmt(balance)}
 - Tasa de ahorro: ${savingsRate}%
-- Gastos fijos: $${fixedTotal.toLocaleString('es-CO')} COP
-- Gastos variables: $${variableTotal.toLocaleString('es-CO')} COP
+- Gastos fijos: ${fmt(fixedTotal)}
+- Gastos variables: ${fmt(variableTotal)}
 - Día de mayor gasto: ${peakDay}
-- Gastos por categoría (top): ${JSON.stringify(topCategories)}
 - Total transacciones: ${expenses.length}
+- Top categorías: ${JSON.stringify(topCategories)}
 
-FORMATO DE SALIDA (JSON estricto):
+FORMATO DE SALIDA (JSON estricto, sin markdown):
 {
-  "score": number (0-100, puntuación de salud financiera),
-  "score_label": "Excelente" | "Buena" | "Regular" | "Crítica",
-  "score_emoji": "🟢" | "🟡" | "🟠" | "🔴",
-  "summary": "string (2-3 oraciones, tono amigable y directo, menciona al usuario por nombre)",
+  "score": 75,
+  "score_label": "Buena",
+  "score_emoji": "🟡",
+  "summary": "Hola [nombre], resumen de 2-3 oraciones de tu mes.",
   "insights": [
     {
-      "type": "success" | "warning" | "danger" | "tip",
-      "icon": "emoji",
-      "title": "string (max 8 palabras)",
-      "detail": "string (max 25 palabras, concreto con cifras)",
-      "action": "string (recomendación accionable, max 15 palabras)"
+      "type": "success",
+      "icon": "✅",
+      "title": "Título corto",
+      "detail": "Detalle con cifras concretas en máximo 25 palabras",
+      "action": "Acción concreta en máximo 15 palabras"
     }
   ],
-  "top_category": { "name": "string", "amount": number, "pct": "string" },
-  "savings_tip": "string (consejo específico de ahorro para el mes siguiente, max 30 palabras)",
-  "projection": "string (proyección de cierre de mes si sigue el ritmo actual, max 20 palabras)"
+  "top_category": { "name": "string", "amount": 0, "pct": "0" },
+  "savings_tip": "Consejo de ahorro para el mes siguiente en máximo 30 palabras.",
+  "projection": "Proyección de cierre de mes en máximo 20 palabras."
 }
 
-Genera entre 4 y 6 insights relevantes. Sé honesto pero constructivo. Si no hay datos suficientes, igual genera insights útiles con los datos disponibles.
+Genera entre 4 y 6 insights. score_label debe ser: Excelente (>80), Buena (60-80), Regular (40-60), Crítica (<40).
+score_emoji: 🟢 Excelente, 🟡 Buena, 🟠 Regular, 🔴 Crítica.
+Si no hay datos suficientes, genera insights basados en los datos disponibles.
 `
 
     const response = await fetch(
@@ -97,21 +124,39 @@ Genera entre 4 y 6 insights relevantes. Sé honesto pero constructivo. Si no hay
       }
     )
 
-    const data = await response.json()
-    if (data.error) throw new Error(data.error.message)
+    const geminiData = await response.json()
 
-    const result = JSON.parse(data.candidates[0].content.parts[0].text)
+    if (geminiData.error) {
+      throw new Error(geminiData.error.message || 'Gemini API error')
+    }
 
-    return new Response(JSON.stringify({ ...result, topCategories, fixedTotal, variableTotal, savingsRate, balance, totalIncomes, totalExpenses }), {
+    const resultText = geminiData.candidates[0].content.parts[0].text
+    const result = JSON.parse(resultText)
+
+    const output = {
+      ...result,
+      topCategories,
+      fixedTotal,
+      variableTotal,
+      savingsRate,
+      balance,
+      totalIncomes,
+      totalExpenses
+    }
+
+    return new Response(JSON.stringify(output), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200
     })
 
   } catch (error) {
     console.error('Copilot error:', error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
-    })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
+      }
+    )
   }
 })
