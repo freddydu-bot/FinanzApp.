@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { useToast } from '../../contexts/ToastContext';
+import { haptic, playSound } from '../../utils/haptics';
 
 export default function ExpenseForm({ expense, onClose }) {
   const { user } = useAuth();
@@ -54,11 +55,15 @@ export default function ExpenseForm({ expense, onClose }) {
       };
 
       if (isEditing) {
-        updateExpense(expense.id, expenseData);
+        await updateExpense(expense.id, expenseData);
+        playSound.success();
+        haptic.success();
         toast.success('Gasto actualizado');
       } else {
-        addExpense(expenseData);
-        toast.success('Gasto registrado');
+        await addExpense(expenseData);
+        playSound.success();
+        haptic.success();
+        toast.success('Gasto registrado exitosamente');
       }
 
       onClose();

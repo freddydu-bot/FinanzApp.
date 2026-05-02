@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import ToastContainer from '../common/Toast';
 import SmartInput from '../common/SmartInput';
+import AuraBackground from './AuraBackground';
 import './AppShell.css';
 
 export default function AppShell({ children }) {
@@ -13,6 +14,7 @@ export default function AppShell({ children }) {
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'app-shell--collapsed' : ''}`}>
+      <AuraBackground />
       <Sidebar
         collapsed={sidebarCollapsed}
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}

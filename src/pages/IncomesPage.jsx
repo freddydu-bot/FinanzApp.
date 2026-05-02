@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import { formatCurrency, getMonthName } from '../utils/formatters';
 import { calculateFinancialSummary } from '../utils/calculations';
 import Modal from '../components/common/Modal';
+import { haptic, playSound } from '../utils/haptics';
 import './IncomesPage.css';
 
 export default function IncomesPage() {
@@ -77,9 +78,13 @@ export default function IncomesPage() {
     try {
       if (editing) {
         await updateIncome(editing.id, data);
+        playSound.success();
+        haptic.success();
         toast.success('Ingreso actualizado');
       } else {
         await addIncome(data);
+        playSound.success();
+        haptic.success();
         toast.success('Ingreso registrado');
       }
       setShowForm(false);

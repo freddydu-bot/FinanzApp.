@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import SmartValidationModal from './SmartValidationModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { haptic, playSound } from '../../utils/haptics';
 
 export default function SmartInput() {
   const { user } = useAuth();
@@ -111,6 +112,8 @@ export default function SmartInput() {
       if (error) throw error;
       
       if (data) {
+        playSound.pop();
+        haptic.light();
         setParsedData(data);
       } else {
         throw new Error('Respuesta vacía de la IA');
@@ -154,6 +157,8 @@ export default function SmartInput() {
         toast.success('Ingreso registrado exitosamente');
       }
       
+      playSound.success();
+      haptic.success();
       setParsedData(null);
       setIsOpen(false);
       setText('');
@@ -215,7 +220,10 @@ export default function SmartInput() {
 
         <button 
           className="fab-button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            if (!isOpen) { playSound.pop(); haptic.light(); }
+            setIsOpen(!isOpen);
+          }}
           style={{
             width: '60px', height: '60px', borderRadius: '50%',
             background: 'linear-gradient(135deg, var(--color-primary), var(--accent-primary))',
