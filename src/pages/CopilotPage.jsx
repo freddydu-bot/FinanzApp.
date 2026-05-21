@@ -81,7 +81,7 @@ function CategoryBar({ name, amount, pct, maxAmount }) {
 
 export default function CopilotPage() {
   const { user } = useAuth();
-  const { expenses, incomes, selectedMonth, selectedYear } = useData();
+  const { expenses, incomes, categories, selectedMonth, selectedYear } = useData();
   const toast = useToast();
 
   const [report, setReport] = useState(null);
@@ -114,9 +114,24 @@ export default function CopilotPage() {
     setLoading(true);
     haptic.light();
     try {
+      const getCategoryName = (catId) => {
+        const cat = categories.find(c => String(c.id) === String(catId));
+        return cat ? cat.name : 'Varios';
+      };
+
+      const enrichedExpenses = myExpenses.map(e => {
+        const catName = getCategoryName(e.category_id);
+        return {
+          ...e,
+          categories: { name: catName },
+          category: { name: catName }, // Compatibility for older cloud functions
+          category_name: catName
+        };
+      });
+
       const { data, error } = await supabase.functions.invoke('financial-copilot', {
         body: {
-          expenses: myExpenses,
+          expenses: enrichedExpenses,
           incomes: myIncomes,
           currentMonth: selectedMonth,
           currentYear: selectedYear,
@@ -125,7 +140,33 @@ export default function CopilotPage() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setReport(data);
+
+      // Calcular todo localmente para máxima robustez (UI Chart & Splits)
+      const fixedTotal = myExpenses.filter(e => e.cost_type === 'fixed').reduce((sum, e) => sum + Number(e.amount), 0);
+      const variableTotal = myExpenses.filter(e => e.cost_type === 'variable').reduce((sum, e) => sum + Number(e.amount), 0);
+      const totalExpenses = myExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      
+      const byCategory = {};
+      enrichedExpenses.forEach(e => {
+        const catName = e.categories.name;
+        byCategory[catName] = (byCategory[catName] || 0) + Number(e.amount);
+      });
+      
+      const topCategories = Object.entries(byCategory)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, amount]) => ({
+          name,
+          amount,
+          pct: totalExpenses > 0 ? ((amount / totalExpenses) * 100).toFixed(1) : '0'
+        }));
+
+      setReport({
+        ...data,
+        fixedTotal,
+        variableTotal,
+        topCategories // Garantiza que la gráfica funcione
+      });
       playSound.success();
       haptic.success();
       setChatHistory([]);
