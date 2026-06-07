@@ -355,14 +355,29 @@ export function DataProvider({ children }) {
       setCategories(newCategories);
       localStorage.setItem('finance-categories', JSON.stringify(newCategories));
     } else {
-      const { error } = await supabase.from('categories').update(updates).eq('id', id);
+      // Try to update first
+      const { data, error } = await supabase.from('categories').update(updates).eq('id', id).select();
       if (error) {
         console.error("DEBUG: Error updating category:", error);
         throw new Error(error.message);
       }
+      
+      // If it doesn't exist in DB (e.g. it's a default category loaded from memory)
+      if (!data || data.length === 0) {
+        const existingCat = categories.find(c => c.id === id);
+        if (existingCat) {
+          const newCat = { ...existingCat, ...updates, created_by: user?.id, partnership_id: partnership?.id };
+          const { error: insertError } = await supabase.from('categories').insert(newCat);
+          if (insertError) {
+             console.error("DEBUG: Error inserting modified default category:", insertError);
+             throw new Error(insertError.message);
+          }
+        }
+      }
+      
       setCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
     }
-  }, [categories]);
+  }, [categories, user, partnership]);
 
   const deleteCategory = useCallback(async (id) => {
     if (isDemoMode) {
