@@ -43,12 +43,31 @@ export default function ExecutedExpensesPage() {
       }
     });
 
+    // Add a 'Sin Categoría' row if it doesn't exist, just in case
+    if (!data.find(c => c.id === 'unmapped')) {
+      data.push({
+        id: 'unmapped',
+        name: 'Sin Categoría',
+        icon: '❓',
+        color: '#94a3b8',
+        months: Array(12).fill(0),
+        total: 0
+      });
+    }
+
     // Populate matrix
     yearExpenses.forEach(exp => {
       const parts = exp.date.split('-');
       if (parts.length >= 2) {
         const mIdx = parseInt(parts[1], 10) - 1; // 0-11
-        const catIdx = data.findIndex(c => String(c.id) === String(exp.category_id));
+        let catIdx = data.findIndex(c => String(c.id) === String(exp.category_id));
+        
+        // Fallback for missing or invalid categories
+        if (catIdx < 0) {
+          catIdx = data.findIndex(c => c.name.toLowerCase() === 'otros');
+          if (catIdx < 0) catIdx = data.findIndex(c => c.id === 'unmapped');
+        }
+        
         if (catIdx >= 0) {
           data[catIdx].months[mIdx] += Number(exp.amount || 0);
           data[catIdx].total += Number(exp.amount || 0);
@@ -67,7 +86,8 @@ export default function ExecutedExpensesPage() {
     // Actually, requirement says group by category, maybe show all. Let's show all that have data or are default.
     // For better UX, let's keep all or just the ones with data > 0? 
     // Requirement says "Agrupar automáticamente los gastos por categoría". We will keep all.
-    return data;
+    // Remove 'Sin Categoría' if it has 0 total and isn't needed
+    return data.filter(r => r.id !== 'unmapped' || r.total > 0);
   }, [categories, expenses, selectedYear, sortOrder, view, user]);
 
   // Calculate bottom totals
