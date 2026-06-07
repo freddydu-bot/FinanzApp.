@@ -33,8 +33,8 @@ export default function ExecutedExpensesPage() {
     // Filter expenses by selected year and view
     const yearExpenses = expenses.filter(e => {
       if (!e.date) return false;
-      const d = new Date(e.date);
-      if (d.getFullYear() !== selectedYear) return false;
+      const yearStr = e.date.split('-')[0];
+      if (parseInt(yearStr, 10) !== selectedYear) return false;
       
       if (view === 'personal') {
         return e.expense_type === 'personal' && e.user_id === user?.id;
@@ -45,12 +45,14 @@ export default function ExecutedExpensesPage() {
 
     // Populate matrix
     yearExpenses.forEach(exp => {
-      const d = new Date(exp.date);
-      const mIdx = d.getMonth(); // 0-11
-      const catIdx = data.findIndex(c => String(c.id) === String(exp.category_id));
-      if (catIdx >= 0) {
-        data[catIdx].months[mIdx] += Number(exp.amount || 0);
-        data[catIdx].total += Number(exp.amount || 0);
+      const parts = exp.date.split('-');
+      if (parts.length >= 2) {
+        const mIdx = parseInt(parts[1], 10) - 1; // 0-11
+        const catIdx = data.findIndex(c => String(c.id) === String(exp.category_id));
+        if (catIdx >= 0) {
+          data[catIdx].months[mIdx] += Number(exp.amount || 0);
+          data[catIdx].total += Number(exp.amount || 0);
+        }
       }
     });
 
