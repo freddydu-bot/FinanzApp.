@@ -23,6 +23,7 @@ export function DataProvider({ children }) {
   const [budgets, setBudgets] = useState([]);
   const [recurringExpenses, setRecurringExpenses] = useState([]);
   const [savingsGoals, setSavingsGoals] = useState([]);
+  const [aiReport, setAiReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -161,6 +162,20 @@ export function DataProvider({ children }) {
         }
       } catch (e) {
         setExpenses([]);
+      }
+      const savedIncomes = localStorage.getItem('finance-incomes');
+      try {
+        if (savedIncomes) {
+          setIncomes(JSON.parse(savedIncomes));
+        } else {
+          const demoIncomes = [
+            { id: 'inc-1', user_id: user?.id, amount: 4500000, description: 'Salario Mensual', category_id: 'income-cat', date: new Date().toISOString() }
+          ];
+          setIncomes(demoIncomes);
+          localStorage.setItem('finance-incomes', JSON.stringify(demoIncomes));
+        }
+      } catch (e) {
+        setIncomes([]);
       }
 
       const savedBudgets = localStorage.getItem('finance-budgets');
@@ -518,7 +533,6 @@ export function DataProvider({ children }) {
   const createPartnership = useCallback(async (partnerEmail) => {
     if (isDemoMode) return;
     try {
-      // 1. Find partner by email in profiles
       const { data: partnerProfile, error: searchError } = await supabase
         .from('profiles')
         .select('id, display_name')
@@ -529,7 +543,6 @@ export function DataProvider({ children }) {
         throw new Error('No se encontró ningún usuario con ese correo electrónico.');
       }
 
-      // 2. Create partnership
       const newP = {
         id: crypto.randomUUID(),
         user1_id: user.id,
@@ -550,6 +563,58 @@ export function DataProvider({ children }) {
     }
   }, [user]);
 
+  const fetchAiReport = useCallback(async (force = false) => {
+    if (!user) return;
+    
+    if (!force && aiReport && aiReport.month === selectedMonth && aiReport.year === selectedYear) {
+      return aiReport;
+    }
+
+    try {
+      const periodExpenses = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
+      });
+      const periodIncomes = incomes.filter(i => {
+        const d = new Date(i.date);
+        return d.getMonth() + 1 === selectedMonth && d.getFullYear() === selectedYear;
+      });
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/financial-copilot`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            expenses: periodExpenses,
+            incomes: periodIncomes,
+            currentMonth: selectedMonth,
+            currentYear: selectedYear,
+            userName: user.display_name
+          })
+        }
+      );
+
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
+
+      const newReport = { ...result, month: selectedMonth, year: selectedYear, timestamp: new Date().getTime() };
+      setAiReport(newReport);
+      localStorage.setItem('last-ai-report', JSON.stringify(newReport));
+      return newReport;
+    } catch (err) {
+      console.error("Error fetching AI report:", err);
+      throw err;
+    }
+  }, [user, expenses, incomes, selectedMonth, selectedYear, aiReport]);
+
+
   return (
     <DataContext.Provider value={{
       partnership,
@@ -560,6 +625,8 @@ export function DataProvider({ children }) {
       budgets,
       recurringExpenses,
       savingsGoals,
+      aiReport,
+      fetchAiReport,
       loading,
       selectedMonth,
       selectedYear,

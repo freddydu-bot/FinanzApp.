@@ -12,7 +12,7 @@ const COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'
 
 export default function AnalyticsPage() {
   const { user } = useAuth();
-  const { partnership, partner, expenses, budgets, categories, selectedMonth, selectedYear, loading } = useData();
+  const { partnership, partner, expenses, budgets, categories, selectedMonth, selectedYear, loading, incomes } = useData();
 
   if (loading) {
     return (
@@ -93,42 +93,77 @@ export default function AnalyticsPage() {
   
   const sharedTotal = shared.reduce((s, e) => s + Number(e.amount), 0);
   const myContribution = shared.filter(e => e.user_id === user?.id).reduce((s, e) => s + Number(e.amount), 0);
-  const partnerContribution = shared.filter(e => e.user_id !== user?.id).reduce((s, e) => s + Number(e.amount), 0);
-  const splitPct = partnership?.user1_split_pct || 50;
-  const myTargetPct = user?.id === partnership?.user1_id ? splitPct : 100 - splitPct;
-  const myRealPct = sharedTotal > 0 ? (myContribution / sharedTotal) * 100 : 0;
-  const contributionDiff = Math.abs(myRealPct - myTargetPct);
+  
+  // Predictive Calculations
+  const today = new Date();
+  const isCurrentMonth = today.getMonth() + 1 === selectedMonth && today.getFullYear() === selectedYear;
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const currentDay = isCurrentMonth ? today.getDate() : daysInMonth;
+  const burnRate = myPersonalTotal / (currentDay || 1);
+  const projectedTotal = burnRate * daysInMonth;
+  const totalIncomes = incomes.filter(i => i.user_id === user?.id && (new Date(i.date).getMonth() + 1 === selectedMonth)).reduce((s, i) => s + Number(i.amount), 0);
+  const projectedBalance = totalIncomes - projectedTotal;
 
   return (
     <div className="analytics-page">
       <div className="page-header">
         <h1 className="page-header__title">📊 Inteligencia Financiera</h1>
-        <p className="page-header__subtitle">Insights estratégicos de {getMonthName(selectedMonth)}</p>
+        <p className="page-header__subtitle">Insights estratégicos y proyecciones de {getMonthName(selectedMonth)}</p>
       </div>
 
-      {/* EXECUTIVE INSIGHT PANEL (PAZ MENTAL) */}
-      <div className="executive-insight glass animate-slideUp">
-        <div className="executive-insight__main">
-          <div className="executive-insight__badge">Reporte de Paz Mental</div>
-          <h2 className="executive-insight__title">
-            {totalSaved > 0 
-              ? `Vas por buen camino, ${user?.display_name?.split(' ')[0]}.` 
-              : `Es momento de ajustar el cinturón.`}
-          </h2>
-          <p className="executive-insight__text">
-            Este mes has logrado un ahorro del <span className="highlight">{formatPercent(savingsRate, 1)}</span> respecto a tu presupuesto. 
-            {savingsRate > 0.1 ? ' ¡Excelente capacidad de gestión! ' : ' Intenta reducir gastos variables para mejorar el margen. '}
-            En cuanto a los gastos compartidos, el balance con {partner?.display_name} está <span className="highlight">{contributionDiff < 10 ? 'equilibrado' : 'desviado'}</span>.
-          </p>
-        </div>
-        <div className="executive-insight__stats">
-          <div className="insight-stat">
-            <span className="insight-stat__label">Eficiencia</span>
-            <span className="insight-stat__value">{formatPercent(100 - (myFixedVar.fixedTotal / (myPersonalTotal || 1) * 100), 0)}</span>
+      <div className="analytics-top-grid mb-lg">
+        {/* EXECUTIVE INSIGHT PANEL (PAZ MENTAL) */}
+        <div className="executive-insight glass animate-slideUp">
+          <div className="executive-insight__main">
+            <div className="executive-insight__badge">Reporte de Paz Mental</div>
+            <h2 className="executive-insight__title">
+              {totalSaved > 0 
+                ? `Vas por buen camino, ${user?.display_name?.split(' ')[0]}.` 
+                : `Es momento de ajustar el cinturón.`}
+            </h2>
+            <p className="executive-insight__text">
+              Este mes has logrado un ahorro del <span className="highlight">{formatPercent(savingsRate, 1)}</span> respecto a tu presupuesto. 
+              {savingsRate > 0.1 ? ' ¡Excelente capacidad de gestión! ' : ' Intenta reducir gastos variables para mejorar el margen. '}
+            </p>
           </div>
-          <div className="insight-stat">
-            <span className="insight-stat__label">Fijo vs Var</span>
-            <span className="insight-stat__value">{Math.round(myFixedVar.fixedTotal / (myFixedVar.variableTotal || 1))}:1</span>
+          <div className="executive-insight__stats">
+            <div className="insight-stat">
+              <span className="insight-stat__label">Eficiencia</span>
+              <span className="insight-stat__value">{formatPercent(100 - (myFixedVar.fixedTotal / (myPersonalTotal || 1) * 100), 0)}</span>
+            </div>
+            <div className="insight-stat">
+              <span className="insight-stat__label">Fijo vs Var</span>
+              <span className="insight-stat__value">{Math.round(myFixedVar.fixedTotal / (myFixedVar.variableTotal || 1))}:1</span>
+            </div>
+          </div>
+        </div>
+
+        {/* PREDICTIVE PROJECTION CARD (NEW) */}
+        <div className={`projection-card glass glass--static animate-slideUp delay-100 border--${projectedBalance >= 0 ? 'success' : 'danger'}`}>
+          <div className="projection-card__header flex justify-between items-center mb-md">
+            <span className="badge badge--primary">Proyección de IA</span>
+            <span className="text-xs text-tertiary">Día {currentDay} de {daysInMonth}</span>
+          </div>
+          <h3 className="projection-card__title m-0">
+            {projectedBalance >= 0 
+              ? 'Pronóstico: Superávit' 
+              : 'Pronóstico: Déficit'}
+          </h3>
+          <p className="projection-card__desc mt-sm mb-lg">
+            Si sigues gastando a este ritmo (${formatCurrency(burnRate)}/día), cerrarás el mes con un saldo de:
+          </p>
+          <div className={`projection-card__value ${projectedBalance >= 0 ? 'text-success' : 'text-danger'} font-bold text-2xl`}>
+            {formatCurrency(projectedBalance)}
+          </div>
+          <div className="mt-lg pt-md border-t border-color-soft flex items-center gap-sm">
+            <span className="text-xl">🔮</span>
+            <span className="text-xs italic text-secondary">
+              {projectedBalance > totalIncomes * 0.2 
+                ? '¡Increíble! Te proyectas para un ahorro masivo este mes.' 
+                : projectedBalance > 0 
+                ? 'Vas bien, pero no bajes la guardia.' 
+                : 'Cuidado: la proyección indica que gastarás más de lo que ingresas.'}
+            </span>
           </div>
         </div>
       </div>

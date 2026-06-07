@@ -4,19 +4,13 @@ import { useData } from '../contexts/DataContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatCurrency } from '../utils/formatters';
 import Modal from '../components/common/Modal';
+import './RecurringPage.css';
 
 export default function RecurringPage() {
   const { user } = useAuth();
   const { partnership, categories, recurringExpenses, addRecurring, updateRecurring, deleteRecurring, loading } = useData();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center" style={{ height: '70vh' }}>
-        <div className="loading-screen__spinner animate-spin">🔁</div>
-      </div>
-    );
-  }
   const toast = useToast();
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
@@ -25,9 +19,28 @@ export default function RecurringPage() {
   });
 
   const allRecurring = useMemo(() => {
-    // STRICT PRIVACY: Only my personal OR shared ones. Never partner's personal.
     return recurringExpenses.filter((r) => r.user_id === user?.id || r.expense_type === 'shared');
   }, [recurringExpenses, user]);
+
+  const totalCommitment = allRecurring.filter(r => r.is_active).reduce((s, r) => s + Number(r.amount), 0);
+
+  const getCatInfo = (catId) => categories.find((c) => c.id === catId) || { name: 'Otro', icon: '📦', color: '#94a3b8' };
+
+  const getSubscriptionIcon = (merchant) => {
+    const m = merchant?.toLowerCase() || '';
+    if (m.includes('netflix')) return '🍿';
+    if (m.includes('spotify')) return '🎧';
+    if (m.includes('gym') || m.includes('gimnasio')) return '💪';
+    if (m.includes('internet') || m.includes('claro') || m.includes('tigo')) return '🌐';
+    if (m.includes('seguro')) return '🛡️';
+    if (m.includes('arriendo') || m.includes('renta')) return '🏠';
+    return null;
+  };
+
+  const isRenewalSoon = (day) => {
+    const today = new Date().getDate();
+    return day >= today && day <= today + 3;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,7 +69,6 @@ export default function RecurringPage() {
     setShowForm(false);
     setEditing(null);
     } catch (err) {
-      console.error("Error submitting recurring:", err);
       toast.error('Error al procesar: ' + err.message);
     }
   };
@@ -87,60 +99,90 @@ export default function RecurringPage() {
     }
   };
 
-  const getCatInfo = (catId) => categories.find((c) => c.id === catId) || { name: 'Otro', icon: '📦', color: '#94a3b8' };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center" style={{ height: '70vh' }}>
+        <div className="loading-screen__spinner animate-spin">🔁</div>
+      </div>
+    );
+  }
 
   return (
     <div className="recurring-page">
       <div className="page-header">
-        <h1 className="page-header__title">🔄 Gastos Recurrentes</h1>
-        <p className="page-header__subtitle">{allRecurring.length} gastos configurados en la pareja</p>
-        <div className="page-header__actions">
+        <div className="flex justify-between items-start flex-wrap gap-md w-full">
+          <div>
+            <h1 className="page-header__title">🔄 Administrador de Suscripciones</h1>
+            <p className="page-header__subtitle">Gestión inteligente de gastos fijos y recurrentes</p>
+          </div>
           <button className="btn btn--primary" onClick={() => { setEditing(null); setForm({ category_id: '', expense_type: 'personal', cost_type: 'fixed', amount: '', description: '', merchant: '', day_of_month: 1 }); setShowForm(true); }}>
-            ＋ Nuevo Recurrente
+            ＋ Nueva Suscripción
           </button>
         </div>
       </div>
 
-      <div className="recurring-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', opacity: 1, visibility: 'visible' }}>
+      <div className="dashboard-grid mb-xl">
+        <div className="stat-card glass border-glow--primary">
+          <span className="stat-card__label">Compromiso Mensual</span>
+          <span className="stat-card__value">{formatCurrency(totalCommitment)}</span>
+          <span className="text-xs text-tertiary">Monto fijo que sale cada mes</span>
+        </div>
+        <div className="stat-card glass">
+          <span className="stat-card__label">Suscripciones Activas</span>
+          <span className="stat-card__value">{allRecurring.filter(r => r.is_active).length}</span>
+          <span className="text-xs text-secondary">De un total de {allRecurring.length} configuradas</span>
+        </div>
+      </div>
+
+      <div className="recurring-grid">
         {allRecurring.length === 0 ? (
-          <div className="empty-state glass glass--static">
+          <div className="empty-state glass glass--static full-width">
             <span className="empty-state__icon">🔄</span>
-            <h3>Sin gastos recurrentes</h3>
-            <p>Los gastos recurrentes se programan aquí para aparecer automáticamente cada mes.</p>
+            <h3>Sin gastos programados</h3>
+            <p>Agrega tus suscripciones o arriendos para que la IA los considere en tu presupuesto.</p>
           </div>
         ) : (
           allRecurring.map((rec) => {
             const cat = getCatInfo(rec.category_id);
             const isOwn = rec.user_id === user?.id;
+            const subIcon = getSubscriptionIcon(rec.merchant);
+            const soon = isRenewalSoon(rec.day_of_month) && rec.is_active;
             
             return (
-              <div key={rec.id} className={`expense-item glass ${!rec.is_active ? 'recurring-inactive' : ''}`} style={{ display: 'flex', opacity: 1, visibility: 'visible' }}>
-                <div className="expense-item__icon" style={{ background: cat.color + '20', color: cat.color }}>
-                  {cat.icon}
-                </div>
-                <div className="expense-item__info">
-                  <div className="expense-item__top">
-                    <span className="expense-item__merchant">{rec.merchant || rec.description || cat.name}</span>
-                    <span className="expense-item__amount" style={{ color: cat.color }}>{formatCurrency(rec.amount)}</span>
+              <div key={rec.id} className={`subscription-card glass ${soon ? 'subscription-card--soon' : ''} ${!rec.is_active ? 'subscription-card--paused' : ''} animate-fadeInUp`}>
+                {soon && <div className="renewal-badge">Vence pronto</div>}
+                <div className="subscription-card__header">
+                  <div className="subscription-icon" style={{ background: cat.color + '15', color: cat.color }}>
+                    {subIcon || cat.icon}
                   </div>
-                  <div className="expense-item__bottom">
-                    <span className="expense-item__date">Día {rec.day_of_month} de cada mes</span>
-                    <span className={`glass-tag ${rec.expense_type === 'shared' ? '' : 'glass-tag--success'}`} style={{ fontSize: '10px' }}>
-                      {rec.expense_type === 'shared' ? '👥 Compartido' : `👤 ${isOwn ? 'Mío' : 'Partner'}`}
-                    </span>
-                    {!rec.is_active && <span className="glass-tag glass-tag--danger" style={{ fontSize: '10px' }}>⏸ Pausado</span>}
+                  <div className="subscription-status">
+                    <span className={`status-dot ${rec.is_active ? 'status-dot--active' : ''}`}></span>
+                    {rec.is_active ? 'Activa' : 'Pausada'}
                   </div>
                 </div>
-                <div className="expense-item__actions">
-                  {isOwn ? (
-                    <>
-                      <button className="expense-item__btn" onClick={() => handleToggleActive(rec)} title={rec.is_active ? 'Pausar' : 'Activar'}>{rec.is_active ? '⏸' : '▶️'}</button>
-                      <button className="expense-item__btn" onClick={() => handleEdit(rec)} title="Editar">✏️</button>
-                      <button className="expense-item__btn expense-item__btn--delete" onClick={() => handleDelete(rec)} title="Eliminar">🗑️</button>
-                    </>
-                  ) : (
-                    <span className="text-xs text-tertiary">🔒</span>
-                  )}
+                
+                <div className="subscription-card__body">
+                  <h3 className="subscription-name">{rec.merchant || rec.description || cat.name}</h3>
+                  <div className="subscription-amount" style={{ color: cat.color }}>{formatCurrency(rec.amount)}</div>
+                  <div className="subscription-meta">
+                    <span>🗓 Día {rec.day_of_month}</span>
+                    <span className="dot-separator">•</span>
+                    <span>{rec.expense_type === 'shared' ? '👥 Compartido' : '👤 Personal'}</span>
+                  </div>
+                </div>
+
+                <div className="subscription-card__footer">
+                  <div className="flex gap-sm">
+                    {isOwn ? (
+                      <>
+                        <button className="icon-btn" onClick={() => handleToggleActive(rec)} title={rec.is_active ? 'Pausar' : 'Activar'}>{rec.is_active ? '⏸' : '▶️'}</button>
+                        <button className="icon-btn" onClick={() => handleEdit(rec)} title="Editar">✏️</button>
+                        <button className="icon-btn text-danger" onClick={() => handleDelete(rec)} title="Eliminar">🗑️</button>
+                      </>
+                    ) : (
+                      <span className="text-xs text-tertiary px-sm">🔒 Propiedad de partner</span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

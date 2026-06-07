@@ -13,6 +13,7 @@ const navItems = [
   { path: '/categories', icon: '🏷️', label: 'Categorías', id: 'nav-categories' },
   { path: '/recurring', icon: '🔄', label: 'Recurrentes', id: 'nav-recurring' },
   { path: '/savings', icon: '📈', label: 'Ahorro e Inversión', id: 'nav-savings' },
+  { path: '/executed-expenses', icon: '📅', label: 'Gastos Ejecutados', id: 'nav-executed-expenses' },
   { path: '/settings', icon: '⚙️', label: 'Configuración', id: 'nav-settings' },
 ];
 

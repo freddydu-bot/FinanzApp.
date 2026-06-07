@@ -315,3 +315,74 @@
   color: var(--text-tertiary);
 }
 
+/* AI Health Widget */
+.ai-health-widget {
+  padding: var(--space-xl);
+  border-left: 4px solid var(--accent-primary);
+  background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(99, 102, 241, 0.05) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-health-widget::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ai-score-circle {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.circular-chart {
+  display: block;
+  max-width: 100%;
+}
+
+.circle-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.05);
+  stroke-width: 3;
+}
+
+.circle {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s ease-in-out;
+}
+
+.percentage {
+  fill: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-anchor: middle;
+}
+
+.ai-insight-main p {
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .ai-health-widget {
+    padding: var(--space-md);
+  }
+  .ai-health-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .ai-score-circle {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+

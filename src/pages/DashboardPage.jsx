@@ -39,7 +39,7 @@ const PIE_COLORS = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#3b82f6', '#8b5
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { partnership, partner, expenses, incomes, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading, loadRealData } = useData();
+  const { partnership, partner, expenses, incomes, budgets, categories, savingsGoals, recurringExpenses, selectedMonth, selectedYear, loading, loadRealData, aiReport, fetchAiReport } = useData();
   const [view, setView] = useState('personal');
   const [isExporting, setIsExporting] = useReactState(false);
   const [isRefreshing, setIsRefreshing] = useReactState(false);
@@ -368,23 +368,67 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* AI PREDICTIVE INSIGHTS BANNER */}
-      <div className={`full-width glass glass--static mb-lg border--${view === 'personal' ? aiInsights.personal.status : aiInsights.shared.status} animate-fadeIn`} style={{ padding: 'var(--space-md)', background: `var(--color-${view === 'personal' ? aiInsights.personal.status : aiInsights.shared.status}-light)` }}>
-        <div className="flex items-start gap-md">
-          <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>🤖</div>
-          <div className="flex-1">
-            <div className="flex justify-between items-center mb-xs">
-              <h4 className="font-bold m-0" style={{ color: `var(--color-${view === 'personal' ? aiInsights.personal.status : aiInsights.shared.status})` }}>
-                Proyección de IA ({daysRemaining} días restantes)
-              </h4>
-               <span className="text-xs text-tertiary">Basado en tu ritmo actual</span>
+      {/* AI FINANCIAL HEALTH WIDGET (PREMIUM) */}
+      <div className="ai-health-widget glass glass--static mb-lg animate-fadeIn">
+        <div className="ai-health-widget__header flex justify-between items-center mb-md">
+          <div className="flex items-center gap-sm">
+            <span style={{ fontSize: '1.5rem' }}>🤖</span>
+            <div>
+              <h3 className="section-title m-0">Salud Financiera (IA)</h3>
+              <p className="text-xs text-tertiary">Análisis personalizado de {getMonthName(selectedMonth)}</p>
             </div>
-            <p className="text-sm m-0">
-              {view === 'personal' ? aiInsights.personal.msg : aiInsights.shared.msg}
-            </p>
           </div>
+          <button 
+            className="glass-btn text-xs py-xs px-sm" 
+            onClick={() => fetchAiReport(true)}
+            style={{ borderRadius: 'var(--radius-sm)' }}
+          >
+            🔄 Recalcular
+          </button>
         </div>
+
+        {aiReport ? (
+          <div className="ai-health-content flex items-center gap-xl flex-wrap">
+            <div className="ai-score-circle">
+              <svg viewBox="0 0 36 36" className="circular-chart">
+                <path className="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path className="circle" style={{ stroke: aiReport.score >= 80 ? 'var(--color-success)' : aiReport.score >= 50 ? 'var(--color-warning)' : 'var(--color-danger)' }}
+                  strokeDasharray={`${aiReport.score}, 100`}
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" 
+                />
+                <text x="18" y="20.35" className="percentage">{aiReport.score}</text>
+              </svg>
+            </div>
+            <div className="ai-insight-main flex-1 min-w-[250px]">
+              <div className="flex items-center gap-sm mb-xs">
+                <span style={{ fontSize: '1.2rem' }}>{aiReport.score_emoji}</span>
+                <h4 className="m-0 font-bold" style={{ color: aiReport.score >= 80 ? 'var(--color-success)' : aiReport.score >= 50 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
+                  {aiReport.score_label}
+                </h4>
+              </div>
+              <p className="text-sm m-0 italic text-secondary">
+                "{aiReport.summary}"
+              </p>
+              {aiReport.savings_tip && (
+                <div className="mt-sm p-sm glass border--success text-xs flex items-center gap-sm">
+                  <span>💡</span>
+                  <span className="text-tertiary">{aiReport.savings_tip}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="ai-placeholder p-xl text-center flex flex-col items-center gap-md">
+            <p className="text-tertiary text-sm max-w-sm">
+              Tu Copiloto aún no ha analizado tus movimientos de este mes.
+            </p>
+            <button className="glass-btn glass-btn--primary" onClick={() => fetchAiReport()}>
+              ✨ Generar Análisis con IA
+            </button>
+          </div>
+        )}
       </div>
+
 
       <div className="financial-summary-row mb-lg animate-fadeIn">
         <div className="summary-item glass" title="Saldo que traes del mes pasado">
