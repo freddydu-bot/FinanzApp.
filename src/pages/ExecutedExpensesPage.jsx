@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { formatCurrency } from '../utils/formatters';
 import './ExecutedExpensesPage.css';
@@ -9,8 +10,10 @@ const MONTHS = [
 ];
 
 export default function ExecutedExpensesPage() {
+  const { user } = useAuth();
   const { categories, expenses, selectedYear, setSelectedYear } = useData();
   const [sortOrder, setSortOrder] = useState('category'); // 'category' | 'amount'
+  const [view, setView] = useState('personal'); // 'personal' | 'shared'
 
   // Generate years for filter (e.g., current year +/- 5)
   const currentY = new Date().getFullYear();
@@ -27,11 +30,17 @@ export default function ExecutedExpensesPage() {
       total: 0
     }));
 
-    // Filter expenses by selected year
+    // Filter expenses by selected year and view
     const yearExpenses = expenses.filter(e => {
       if (!e.date) return false;
       const d = new Date(e.date);
-      return d.getFullYear() === selectedYear;
+      if (d.getFullYear() !== selectedYear) return false;
+      
+      if (view === 'personal') {
+        return e.expense_type === 'personal' && e.user_id === user?.id;
+      } else {
+        return e.expense_type === 'shared';
+      }
     });
 
     // Populate matrix
@@ -57,7 +66,7 @@ export default function ExecutedExpensesPage() {
     // For better UX, let's keep all or just the ones with data > 0? 
     // Requirement says "Agrupar automáticamente los gastos por categoría". We will keep all.
     return data;
-  }, [categories, expenses, selectedYear, sortOrder]);
+  }, [categories, expenses, selectedYear, sortOrder, view, user]);
 
   // Calculate bottom totals
   const monthlyTotals = Array(12).fill(0);
@@ -79,7 +88,21 @@ export default function ExecutedExpensesPage() {
             <p className="page-header__subtitle">Análisis anual de ejecución real por categoría y mes</p>
           </div>
           
-          <div className="flex gap-md items-center">
+          <div className="flex gap-md items-center" style={{ flexWrap: 'wrap' }}>
+            <div className="segmented-control glass">
+              <button 
+                className={`segmented-control__btn ${view === 'personal' ? 'active' : ''}`} 
+                onClick={() => setView('personal')}
+              >
+                Personal
+              </button>
+              <button 
+                className={`segmented-control__btn ${view === 'shared' ? 'active' : ''}`} 
+                onClick={() => setView('shared')}
+              >
+                Compartido
+              </button>
+            </div>
              <select 
               className="glass-input" 
               value={selectedYear} 
