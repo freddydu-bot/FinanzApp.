@@ -13,6 +13,8 @@ export function getSemaphoreStatus(spent, budget, categoryName = '') {
     if (percent >= 100) return { status: 'green', percent, label: 'Meta cumplida' };
     if (percent >= 70) return { status: 'orange', percent, label: 'En progreso' };
     return { status: 'red', percent, label: 'Bajo ahorro' };
+  }
+
   // For EXPENSES: Less is better
   if (percent > 102) return { status: 'red', percent, label: 'Excedido' };
   if (percent >= 98) return { status: 'orange', percent, label: 'Al límite' };
