@@ -230,12 +230,20 @@ export default function DashboardPage() {
 
   const renderSemaphore = (spent, budget, label) => {
     const sem = getSemaphoreStatus(spent, budget);
+    const DASH_COLORS = {
+      green:  'var(--color-success)',
+      yellow: '#f5c518',
+      blue:   '#3b82f6',
+      red:    'var(--color-danger)',
+    };
+    const barColor = DASH_COLORS[sem.status] || DASH_COLORS.green;
     return (
       <div className="semaphore-item">
         <div className="semaphore-item__header">
           <span className="semaphore-item__label">{label}</span>
           <span className="semaphore-item__values">
-            <span className="font-bold">{formatCurrency(spent)}</span> / {formatCurrency(budget)}
+            <span className="font-bold" style={{ color: barColor }}>{formatPercent(sem.percent)}</span>
+            &nbsp;·&nbsp;{formatCurrency(spent)} / {formatCurrency(budget)}
           </span>
         </div>
         <div className="semaphore-bar">
@@ -243,7 +251,7 @@ export default function DashboardPage() {
             className={`semaphore-bar__fill progress-fill`}
             style={{ 
               width: `${Math.min(sem.percent, 100)}%`, 
-              background: sem.status === 'green' ? 'var(--color-success)' : sem.status === 'orange' ? 'var(--color-warning)' : 'var(--color-danger)'
+              background: barColor
             }}
           />
         </div>
