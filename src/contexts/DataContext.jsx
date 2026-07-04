@@ -403,14 +403,16 @@ export function DataProvider({ children }) {
     };
 
     if (isDemoMode) {
-      const existing = budgets.findIndex(
-        (b) => b.category_id === budget.category_id && b.budget_type === budget.budget_type && b.month === budget.month
-      );
-      let newBudgets = [...budgets];
-      if (existing >= 0) newBudgets[existing] = { ...newBudgets[existing], ...budgetData };
-      else newBudgets.push({ ...budgetData, id: crypto.randomUUID() });
-      setBudgets(newBudgets);
-      localStorage.setItem('finance-budgets', JSON.stringify(newBudgets));
+      setBudgets((prevBudgets) => {
+        const existing = prevBudgets.findIndex(
+          (b) => b.category_id === budget.category_id && b.budget_type === budget.budget_type && b.month === budget.month && b.year === budget.year
+        );
+        let newBudgets = [...prevBudgets];
+        if (existing >= 0) newBudgets[existing] = { ...newBudgets[existing], ...budgetData };
+        else newBudgets.push({ ...budgetData, id: crypto.randomUUID() });
+        localStorage.setItem('finance-budgets', JSON.stringify(newBudgets));
+        return newBudgets;
+      });
     } else {
       let query = supabase.from('budgets').select('id')
         .eq('category_id', budget.category_id)

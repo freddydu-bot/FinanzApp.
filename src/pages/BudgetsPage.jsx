@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import { useToast } from '../contexts/ToastContext';
@@ -13,43 +13,60 @@ const SEMAPHORE_COLORS = {
 };
 
 export default function BudgetsPage() {
-  const { user } = useAuth();
-  const { partnership, categories, budgets, expenses, upsertBudget, selectedMonth, selectedYear } = useData();
+  const { user, isDemoMode } = useAuth();
+  const { partnership, categories, budgets, expenses, upsertBudget, selectedMonth, selectedYear, loadRealData, loading } = useData();
   const toast = useToast();
   const [view, setView] = useState('personal');
+
+  // If the user is part of a partnership, default to shared view ONCE
+  useEffect(() => {
+    if (partnership) {
+      setView('shared');
+    }
+  }, [partnership]);
   const [editingId, setEditingId] = useState(null);
   const [editAmount, setEditAmount] = useState('');
 
+  // Keep refs of budgets and periodBudgets to avoid triggering the auto-generation useEffect repeatedly
+  const budgetsRef = useRef(budgets);
+  budgetsRef.current = budgets;
+
   const periodExpenses = useMemo(() => filterByPeriod(expenses, selectedMonth, selectedYear), [expenses, selectedMonth, selectedYear]);
+
   const periodBudgets = useMemo(() => budgets.filter((b) => b.month === selectedMonth && b.year === selectedYear), [budgets, selectedMonth, selectedYear]);
+
+  const periodBudgetsRef = useRef(periodBudgets);
+  periodBudgetsRef.current = periodBudgets;
+
+
 
   const currentBudgets = useMemo(() => {
     let base = view === 'personal'
       ? periodBudgets.filter((b) => b.budget_type === 'personal' && b.user_id === user?.id)
       : periodBudgets.filter((b) => b.budget_type === 'shared');
-    
+
     // Inherit budgets from the previous month for categories not yet budgeted this month
     const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
     const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
-    
-    const prevBudgets = budgets.filter(b => b.month === prevMonth && b.year === prevYear);
+    const prevBudgets = budgets.filter((b) => b.month === prevMonth && b.year === prevYear);
     const prevBase = view === 'personal'
       ? prevBudgets.filter((b) => b.budget_type === 'personal' && b.user_id === user?.id)
       : prevBudgets.filter((b) => b.budget_type === 'shared');
 
-    prevBase.forEach(prevB => {
-      if (!base.find(b => b.category_id === prevB.category_id)) {
+    prevBase.forEach((prevB) => {
+      if (!base.find((b) => b.category_id === prevB.category_id)) {
         base.push({
           ...prevB,
           id: `auto-prev-${prevB.id}`,
           month: selectedMonth,
-          year: selectedYear
+          year: selectedYear,
         });
       }
     });
 
-    const savingCat = categories.find(c => c.name.toLowerCase().includes('ahorro'));
-    if (savingCat && !base.find(b => b.category_id === savingCat.id)) {
+    // Ensure saving category exists
+    const savingCat = categories.find((c) => c.name.toLowerCase().includes('ahorro'));
+    if (savingCat && !base.find((b) => b.category_id === savingCat.id)) {
       base.push({
         id: `auto-${savingCat.id}`,
         partnership_id: partnership?.id,
@@ -58,11 +75,132 @@ export default function BudgetsPage() {
         budget_type: view,
         amount: 0,
         month: selectedMonth,
-        year: selectedYear
+        year: selectedYear,
       });
     }
+
+    // Ensure every category has a budget entry for the selected month
+    const existingCatIds = base.map(b => b.category_id);
+    categories.forEach((cat) => {
+      if (!existingCatIds.includes(cat.id)) {
+        base.push({
+          id: `auto-init-${cat.id}`,
+          partnership_id: partnership?.id,
+          category_id: cat.id,
+          user_id: view === 'personal' ? user?.id : null,
+          budget_type: view,
+          amount: 0,
+          month: selectedMonth,
+          year: selectedYear,
+        });
+      }
+    });
+
     return base;
-  }, [periodBudgets, view, user, categories, partnership, selectedMonth, selectedYear, budgets]);
+  }, [view, periodBudgets, selectedMonth, selectedYear, budgets, categories, partnership, user]);
+
+// Debug: Log current budgets after calculation
+console.log('Current Budgets for month', selectedMonth, selectedYear, currentBudgets);
+  // Debug: log categories and current budgets length
+  console.log('Categories total', categories.length);
+  console.log('CurrentBudgets length', currentBudgets.length);
+
+
+
+
+  // Persist auto‑generated budgets for the selected month when the component mounts or the month changes
+  useEffect(() => {
+    if (loading) return;
+
+    let isCancelled = false;
+
+    (async () => {
+      const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+      const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+
+      // 1. Copy personal budgets from the previous month
+      for (const cat of categories) {
+        if (isCancelled) return;
+        
+        const currentBudget = periodBudgetsRef.current.find((b) =>
+          b.category_id === cat.id &&
+          b.budget_type === 'personal' &&
+          b.user_id === user?.id
+        );
+        
+        // Skip if the current month already has a non-zero budget
+        if (currentBudget && Number(currentBudget.amount) > 0) continue;
+
+        const prevBudget = budgetsRef.current.find((b) =>
+          b.month === prevMonth &&
+          b.year === prevYear &&
+          b.category_id === cat.id &&
+          b.budget_type === 'personal' &&
+          b.user_id === user?.id
+        );
+
+        if (prevBudget && Number(prevBudget.amount) > 0) {
+          try {
+            await upsertBudget({
+              ...currentBudget,
+              partnership_id: partnership?.id,
+              category_id: cat.id,
+              user_id: user?.id,
+              budget_type: 'personal',
+              amount: prevBudget.amount,
+              month: selectedMonth,
+              year: selectedYear,
+            });
+          } catch (e) {
+            console.error('Error creating personal budget for', cat.name, e);
+            toast.error(`Error al copiar presupuesto personal de ${cat.name}: ${e.message}`);
+          }
+        }
+      }
+
+      // 2. Copy shared budgets from the previous month
+      for (const cat of categories) {
+        if (isCancelled) return;
+
+        const currentBudget = periodBudgetsRef.current.find((b) =>
+          b.category_id === cat.id &&
+          b.budget_type === 'shared'
+        );
+
+        // Skip if the current month already has a non-zero budget
+        if (currentBudget && Number(currentBudget.amount) > 0) continue;
+
+        const prevBudget = budgetsRef.current.find((b) =>
+          b.month === prevMonth &&
+          b.year === prevYear &&
+          b.category_id === cat.id &&
+          b.budget_type === 'shared'
+        );
+
+        if (prevBudget && Number(prevBudget.amount) > 0) {
+          try {
+            await upsertBudget({
+              ...currentBudget,
+              partnership_id: partnership?.id,
+              category_id: cat.id,
+              user_id: null,
+              budget_type: 'shared',
+              amount: prevBudget.amount,
+              month: selectedMonth,
+              year: selectedYear,
+            });
+          } catch (e) {
+            console.error('Error creating shared budget for', cat.name, e);
+            toast.error(`Error al copiar presupuesto compartido de ${cat.name}: ${e.message}`);
+          }
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedMonth, selectedYear, user, partnership, categories, loading]);
 
   const relevantExpenses = view === 'personal'
     ? periodExpenses.filter((e) => e.user_id === user?.id && e.expense_type === 'personal')
@@ -143,6 +281,9 @@ export default function BudgetsPage() {
               <button className={`segmented-control__btn ${view === 'shared' ? 'active' : ''}`} onClick={() => setView('shared')}>Compartido</button>
             </div>
           </div>
+        </div>
+        <div className="flex items-center gap-sm">
+          <button className="glass-btn p-xs" onClick={loadRealData}>🔄 Refrescar datos</button>
         </div>
       </div>
 
