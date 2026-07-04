@@ -17,9 +17,9 @@ export function getSemaphoreStatus(spent, budget, categoryName = '') {
 
   // For EXPENSES: Less is better — 4 tiers
   if (percent > 102) return { status: 'red',    percent, label: 'Excedido' };
-  if (percent >= 98) return { status: 'orange',  percent, label: 'Al límite' };
-  if (percent >= 81) return { status: 'yellow',  percent, label: 'Precaución' };
-  return              { status: 'green',          percent, label: 'Normal' };
+  if (percent >= 98) return { status: 'blue',   percent, label: 'Al límite' };
+  if (percent >= 81) return { status: 'yellow', percent, label: 'Precaución' };
+  return              { status: 'green',         percent, label: 'Normal' };
 }
 
 /**
