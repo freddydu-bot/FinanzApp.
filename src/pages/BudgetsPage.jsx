@@ -17,13 +17,8 @@ export default function BudgetsPage() {
   const { partnership, categories, budgets, expenses, upsertBudget, selectedMonth, selectedYear, loadRealData, loading } = useData();
   const toast = useToast();
   const [view, setView] = useState('personal');
-
-  // If the user is part of a partnership, default to shared view ONCE
-  useEffect(() => {
-    if (partnership) {
-      setView('shared');
-    }
-  }, [partnership]);
+  // By default, the view is set to 'personal' (useState('personal'))
+  // We no longer automatically switch to 'shared'.
   const [editingId, setEditingId] = useState(null);
   const [editAmount, setEditAmount] = useState('');
 
