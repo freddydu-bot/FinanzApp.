@@ -10,14 +10,13 @@ export function getSemaphoreStatus(spent, budget, categoryName = '') {
   const isSaving = categoryName.toLowerCase().includes('ahorro') || categoryName.toLowerCase().includes('inversión');
 
   if (isSaving) {
-    // For SAVINGS: More is better
-    if (percent >= 100) return { status: 'green', percent: Math.min(percent, 150), label: 'Meta cumplida' };
+    if (percent >= 100) return { status: 'green', percent, label: 'Meta cumplida' };
     if (percent >= 70) return { status: 'orange', percent, label: 'En progreso' };
     return { status: 'red', percent, label: 'Bajo ahorro' };
   }
 
   // For EXPENSES: Less is better
-  if (percent >= 100) return { status: 'red', percent: Math.min(percent, 150), label: 'Excedido' };
+  if (percent >= 100) return { status: 'red', percent, label: 'Excedido' };
   if (percent >= 80) return { status: 'orange', percent, label: 'Precaución' };
   return { status: 'green', percent, label: 'Normal' };
 }
