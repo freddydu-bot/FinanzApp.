@@ -8,6 +8,7 @@ import './BudgetsPage.css';
 
 const SEMAPHORE_COLORS = { 
   green: 'var(--color-success)', 
+  yellow: '#f5c518',
   orange: 'var(--color-warning)', 
   red: 'var(--color-danger)' 
 };
